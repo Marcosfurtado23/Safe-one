@@ -2,16 +2,14 @@ import React from 'react';
 import { 
   Users, 
   HeartPulse, 
-  Car, 
-  Building2, 
-  Home, 
   Coins, 
   ShieldAlert, 
-  Sparkles,
   Headphones,
   Settings2,
   LockKeyhole,
-  MessageCircle
+  MessageCircle,
+  Briefcase,
+  Heart
 } from 'lucide-react';
 
 interface FeaturesProps {
@@ -23,44 +21,44 @@ export default function Features({ onOpenSimulator }: FeaturesProps) {
     {
       icon: <Users className="h-9 w-9 text-amber-600" />,
       title: "Proteção Familiar",
-      description: "Cuidado e segurança financeira para quem mais importa.",
+      description: "Amparo rentável imediato para manter o padrão de vida e o futuro de sua família na sua ausência.",
       accent: "border-amber-500/10 hover:border-amber-500/30",
       bg: "bg-amber-500/5"
     },
     {
       icon: <HeartPulse className="h-9 w-9 text-red-500" />,
-      title: "Saúde e Bem-estar",
-      description: "Planos de saúde com cobertura completa para você e sua família.",
-      accent: "border-red-550/10 hover:border-red-500/30",
+      title: "Doenças Graves",
+      description: "Antecipação de capital em vida para suporte a tratamentos complexos (câncer, infarto, AVC e mais).",
+      accent: "border-red-500/10 hover:border-red-500/30",
       bg: "bg-red-500/5"
     },
     {
-      icon: <Car className="h-9 w-9 text-amber-500" />,
-      title: "Seguro Auto",
-      description: "Proteção completa para você rodar com tranquilidade.",
-      accent: "border-amber-500/10 hover:border-amber-500/30",
-      bg: "bg-amber-500/5"
-    },
-    {
-      icon: <Building2 className="h-9 w-9 text-yellow-600" />,
-      title: "Seguro Empresarial",
-      description: "Soluções sob medida para proteger o que você construiu.",
-      accent: "border-yellow-500/10 hover:border-yellow-500/30",
-      bg: "bg-yellow-500/5"
-    },
-    {
-      icon: <Home className="h-9 w-9 text-amber-600" />,
-      title: "Residencial",
-      description: "Mais segurança para o seu lar e para sua família.",
+      icon: <Briefcase className="h-9 w-9 text-amber-500" />,
+      title: "Incapacidade Temporária",
+      description: "Diárias pagas caso você precise se afastar do seu trabalho por doença ou acidente, mantendo sua renda.",
       accent: "border-amber-500/10 hover:border-amber-500/30",
       bg: "bg-amber-500/5"
     },
     {
       icon: <Coins className="h-9 w-9 text-[#c5912a]" />,
-      title: "Previdência Privada",
-      description: "Planeje hoje seu amanhã com mais tranquilidade.",
+      title: "Sucessão e Inventário",
+      description: "Transmissão rápida de patrimônio fora de processos tributários de herança (isento de imposto ITCMD).",
       accent: "border-amber-500/10 hover:border-amber-500/30",
       bg: "bg-amber-500/5"
+    },
+    {
+      icon: <ShieldAlert className="h-9 w-9 text-[#c5912a]" />,
+      title: "Invalidez por Acidente",
+      description: "Garantia de recursos próprios se houver perda parcial ou total de autonomia física por sinistros acidentais.",
+      accent: "border-amber-500/10 hover:border-amber-500/30",
+      bg: "bg-amber-500/5"
+    },
+    {
+      icon: <Heart className="h-9 w-9 text-red-500" />,
+      title: "Assistência Funeral",
+      description: "Amparo integral para lidar com custos operacionais técnicos e burocráticos sem endividar a família.",
+      accent: "border-red-500/10 hover:border-red-500/30",
+      bg: "bg-red-500/5"
     }
   ];
 
