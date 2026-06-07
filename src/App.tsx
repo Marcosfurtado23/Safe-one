@@ -3,9 +3,12 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
 import Simulator from './components/Simulator';
+import Articles from './components/Articles';
+import Testimonials from './components/Testimonials';
 import Faq from './components/Faq';
 import Footer from './components/Footer';
 import WhatsappBubble from './components/WhatsappBubble';
+import AiAssistant from './components/AiAssistant';
 import { Phone } from 'lucide-react';
 import { useSettings } from './context/SettingsContext';
 
@@ -38,6 +41,8 @@ export default function App() {
         <Hero onOpenSimulator={() => setIsSimulatorOpen(true)} />
         <Features onOpenSimulator={() => setIsSimulatorOpen(true)} />
         <Simulator isOpen={isSimulatorOpen} onClose={() => setIsSimulatorOpen(false)} />
+        <Articles />
+        <Testimonials />
         <Faq />
       </main>
 
@@ -45,6 +50,7 @@ export default function App() {
 
       {/* Floating Interactive Widget */}
       <WhatsappBubble />
+      <AiAssistant />
 
       {/* Sticky Mobile Lead Redirection footer matching the visual bottom block of the image */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 md:hidden p-3 shadow-2xl flex gap-3">
