@@ -1,5 +1,5 @@
 {
-  "name": "Simulador de Seguro de Vida",
+  "name": "SafeOne Seguros",
   "description": "Site totalmente interativo do Seguro de Vida SafeOne com simulador intuitivo de preços e orçamento direto por WhatsApp.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
