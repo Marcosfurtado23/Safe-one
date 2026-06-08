@@ -59,6 +59,19 @@ export default function AdminPanel() {
   const [tempSusep, setTempSusep] = useState(settings.susepNumber);
   const [tempCnpj, setTempCnpj] = useState(settings.cnpj);
 
+  // Banner Settings inputs state
+  const [tempBannerImageUrl, setTempBannerImageUrl] = useState(settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg");
+  const [tempBannerPaddingTop, setTempBannerPaddingTop] = useState(settings.bannerPaddingTop ?? 80);
+  const [tempBannerPaddingBottom, setTempBannerPaddingBottom] = useState(settings.bannerPaddingBottom ?? 56);
+  const [tempBannerGradientLength, setTempBannerGradientLength] = useState(settings.bannerGradientLength ?? 42);
+  const [tempBannerPhotoPosX, setTempBannerPhotoPosX] = useState(settings.bannerPhotoPosX ?? 100);
+  const [tempBannerPhotoPosY, setTempBannerPhotoPosY] = useState(settings.bannerPhotoPosY ?? 100);
+  const [tempBannerPhotoSizeOption, setTempBannerPhotoSizeOption] = useState(settings.bannerPhotoSizeOption || "cover");
+  const [tempBannerPhotoScale, setTempBannerPhotoScale] = useState(settings.bannerPhotoScale ?? 100);
+
+  // State to manage the mini preview popup visibility
+  const [showPreviewPopup, setShowPreviewPopup] = useState(true);
+
   // Articles manager state
   const [activeTab, setActiveTab] = useState<'settings' | 'articles'>('settings');
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
@@ -93,6 +106,14 @@ export default function AdminPanel() {
     setTempPhone(settings.phone);
     setTempSusep(settings.susepNumber);
     setTempCnpj(settings.cnpj);
+    setTempBannerImageUrl(settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg");
+    setTempBannerPaddingTop(settings.bannerPaddingTop ?? 80);
+    setTempBannerPaddingBottom(settings.bannerPaddingBottom ?? 56);
+    setTempBannerGradientLength(settings.bannerGradientLength ?? 42);
+    setTempBannerPhotoPosX(settings.bannerPhotoPosX ?? 100);
+    setTempBannerPhotoPosY(settings.bannerPhotoPosY ?? 100);
+    setTempBannerPhotoSizeOption(settings.bannerPhotoSizeOption || "cover");
+    setTempBannerPhotoScale(settings.bannerPhotoScale ?? 100);
   }, [settings]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -156,6 +177,14 @@ export default function AdminPanel() {
       phone: tempPhone.trim(),
       susepNumber: tempSusep.trim(),
       cnpj: tempCnpj.trim(),
+      bannerImageUrl: tempBannerImageUrl,
+      bannerPaddingTop: Number(tempBannerPaddingTop),
+      bannerPaddingBottom: Number(tempBannerPaddingBottom),
+      bannerGradientLength: Number(tempBannerGradientLength),
+      bannerPhotoPosX: Number(tempBannerPhotoPosX),
+      bannerPhotoPosY: Number(tempBannerPhotoPosY),
+      bannerPhotoSizeOption: tempBannerPhotoSizeOption,
+      bannerPhotoScale: Number(tempBannerPhotoScale),
     });
     triggerSuccessFeedback();
   };
@@ -648,6 +677,220 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
+                {/* PARTE DE CUSTOMIZAÇÃO DO BANNER PRINCIPAL */}
+                <div className="bg-slate-950/40 p-5 rounded-xl border border-indigo-950/40 space-y-5">
+                  <div className="flex items-center justify-between border-b border-indigo-950/60 pb-2">
+                    <h4 className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Design e Estética do Banner Principal</span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewPopup(!showPreviewPopup)}
+                      className="text-[10px] underline font-mono text-amber-500 hover:text-amber-400 cursor-pointer bg-transparent border-none font-bold"
+                    >
+                      {showPreviewPopup ? "✓ Prévia Pop-up Ativa" : "Mostrar Prévia Pop-up"}
+                    </button>
+                  </div>
+
+                  {/* Banner Image URL and File Upload */}
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                      Imagem de Fundo do Banner (URL ou Enviar Foto Local)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={tempBannerImageUrl}
+                        onChange={(e) => setTempBannerImageUrl(e.target.value)}
+                        placeholder="https://exemplo.com/imagem.png"
+                        className="flex-1 rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                      />
+                      
+                      {/* Upload button */}
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 1.2 * 1024 * 1024) {
+                                alert("A imagem selecionada excede 1.2MB. Use arquivos menores para otimizar os tempos de salvamento local no Firestore!");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setTempBannerImageUrl(reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="hidden"
+                          id="banner-upload"
+                        />
+                        <label
+                          htmlFor="banner-upload"
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-xs font-bold text-indigo-200 hover:text-white transition-all cursor-pointer whitespace-nowrap h-full justify-center"
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span>Mudar Foto</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slider Controls group divided into two grids */}
+                  <div className="grid gap-6 sm:grid-cols-2 pt-1">
+                    
+                    {/* Col 1: Spacing and Gradient (Comprimento) */}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                            Altura Superior (Padding Top)
+                          </label>
+                          <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPaddingTop}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="40"
+                          max="240"
+                          step="5"
+                          value={tempBannerPaddingTop}
+                          onChange={(e) => setTempBannerPaddingTop(Number(e.target.value))}
+                          className="w-full accent-indigo-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Espaçamento interno superior (redimensiona o banner para cima)</span>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                            Altura Inferior (Padding Bottom)
+                          </label>
+                          <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPaddingBottom}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="40"
+                          max="240"
+                          step="5"
+                          value={tempBannerPaddingBottom}
+                          onChange={(e) => setTempBannerPaddingBottom(Number(e.target.value))}
+                          className="w-full accent-indigo-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Espaçamento interno inferior (redimensiona o banner para baixo)</span>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                            Comprimento Cores / Gradiente Mid
+                          </label>
+                          <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerGradientLength}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={tempBannerGradientLength}
+                          onChange={(e) => setTempBannerGradientLength(Number(e.target.value))}
+                          className="w-full accent-indigo-500 bg-slate-955 h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Controla a área de tonalidade escura que preserva a legibilidade textual</span>
+                      </div>
+                    </div>
+
+                    {/* Col 2: Photo Position & Scaling */}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                            Mover Foto - Eixo X (Horizontal)
+                          </label>
+                          <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPhotoPosX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={tempBannerPhotoPosX}
+                          onChange={(e) => setTempBannerPhotoPosX(Number(e.target.value))}
+                          className="w-full accent-indigo-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Ajusta o alinhamento horizontal (esquerda ou direita)</span>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                            Mover Foto - Eixo Y (Vertical)
+                          </label>
+                          <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPhotoPosY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={tempBannerPhotoPosY}
+                          onChange={(e) => setTempBannerPhotoPosY(Number(e.target.value))}
+                          className="w-full accent-indigo-500 bg-slate-955 h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Ajusta o alinhamento vertical (para cima ou para baixo)</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-2">
+                          Dimensionar Imagem (Escala)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoSizeOption('cover')}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              tempBannerPhotoSizeOption === 'cover'
+                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                : 'bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Preencher área (Cover)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoSizeOption('custom')}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              tempBannerPhotoSizeOption === 'custom'
+                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                : 'bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Editar Proporção
+                          </button>
+                        </div>
+
+                        {tempBannerPhotoSizeOption === 'custom' && (
+                          <div className="space-y-1 mt-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] text-slate-400 font-mono">Zoom da Imagem:</span>
+                              <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPhotoScale}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="20"
+                              max="300"
+                              value={tempBannerPhotoScale}
+                              onChange={(e) => setTempBannerPhotoScale(Number(e.target.value))}
+                              className="w-full accent-indigo-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
@@ -1011,6 +1254,78 @@ export default function AdminPanel() {
         </div>
 
       </main>
+
+      {/* PREVISÃO EM TEMPO REAL FLUTUANTE (MINI POP-UP) */}
+      {activeTab === 'settings' && showPreviewPopup && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 rounded-2xl bg-[#061225] border border-indigo-500/20 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[360px] md:max-h-[420px]">
+          {/* Panel Header */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-indigo-950 bg-[#051124] text-white">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400 animate-pulse" />
+              <span className="text-xs font-bold font-sans tracking-wide">Prévia em Tempo Real (Banner)</span>
+            </div>
+            <button
+              onClick={() => setShowPreviewPopup(false)}
+              className="text-slate-400 hover:text-white p-1 hover:bg-indigo-950/40 rounded transition-all cursor-pointer"
+              title="Ocultar Prévia"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Miniature Banner Canvas Container */}
+          <div className="p-4 bg-slate-950 flex-1 overflow-auto">
+            <div 
+              className="w-full rounded-xl border border-indigo-950/40 relative overflow-hidden bg-[#051124] text-white bg-no-repeat"
+              style={{
+                backgroundImage: `url(${tempBannerImageUrl})`,
+                backgroundPosition: `${tempBannerPhotoPosX}% ${tempBannerPhotoPosY}%`,
+                backgroundSize: tempBannerPhotoSizeOption === 'custom' ? `${tempBannerPhotoScale}%` : 'cover',
+                // Scaled padding down to 35% of original to fit neatly inside the preview card
+                paddingTop: `${Math.max(16, tempBannerPaddingTop * 0.35)}px`,
+                paddingBottom: `${Math.max(16, tempBannerPaddingBottom * 0.35)}px`,
+                transition: 'all 0.1s ease-out'
+              }}
+            >
+              {/* Dynamic Gradient stop */}
+              <div 
+                className="absolute inset-0 z-10" 
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.85) ${tempBannerGradientLength}%, rgba(5, 17, 36, 0.15) 100%)`
+                }}
+              />
+
+              {/* Scaled Text Overlay */}
+              <div className="relative z-20 px-3 pl-4 max-w-[70%] text-left">
+                <h5 className="font-sans text-[12px] sm:text-[14px] font-extrabold tracking-tight text-white leading-tight">
+                  Sua família está <br />
+                  preparada para <br />
+                  o <span className="text-[#dfb448]">inesperado?</span>
+                </h5>
+                <p className="text-[7.5px] text-slate-300 leading-relaxed font-normal mt-1 max-w-[150px]">
+                  O seguro de vida garante proteção financeira e tranquilidade para quem você ama.
+                </p>
+
+                <div className="flex gap-1.5 mt-2.5 items-center">
+                  {/* Simulation button mock */}
+                  <div className="rounded px-2 py-1 bg-[#c5912a] text-[6.5px] font-extrabold leading-none select-none text-white font-mono scale-90 origin-left">
+                    Simule Agora
+                  </div>
+                  {/* WA outline check mock */}
+                  <div className="rounded px-1.5 py-1 border border-white/20 bg-transparent text-[6.5px] text-slate-350 font-bold scale-90 origin-left leading-none uppercase">
+                    WhatsApp
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Visual disclaimer */}
+            <p className="text-[9px] text-indigo-400 mt-2 text-center font-medium font-mono">
+              ✓ Arraste os sliders acima para ver as atualizações em tempo real!
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );

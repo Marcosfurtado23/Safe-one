@@ -9,6 +9,14 @@ export interface AppSettings {
   phone: string;
   susepNumber: string;
   cnpj: string;
+  bannerImageUrl: string;
+  bannerPaddingTop: number;
+  bannerPaddingBottom: number;
+  bannerGradientLength: number;
+  bannerPhotoPosX: number;
+  bannerPhotoPosY: number;
+  bannerPhotoSizeOption: string;
+  bannerPhotoScale: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -18,6 +26,14 @@ const DEFAULT_SETTINGS: AppSettings = {
   phone: '+55 (11) 4003-9821',
   susepNumber: '10.2045610',
   cnpj: '00.320.145/0001-99',
+  bannerImageUrl: 'https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg',
+  bannerPaddingTop: 80,
+  bannerPaddingBottom: 56,
+  bannerGradientLength: 42,
+  bannerPhotoPosX: 100,
+  bannerPhotoPosY: 100,
+  bannerPhotoSizeOption: 'cover',
+  bannerPhotoScale: 100,
 };
 
 interface SettingsContextType {
@@ -48,9 +64,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(configDocRef, (snapshot) => {
       if (snapshot.exists()) {
         const firestoreData = snapshot.data() as AppSettings;
-        setSettings(firestoreData);
+        const mergedSettings = { ...DEFAULT_SETTINGS, ...firestoreData };
+        setSettings(mergedSettings);
         try {
-          localStorage.setItem('safeone_settings', JSON.stringify(firestoreData));
+          localStorage.setItem('safeone_settings', JSON.stringify(mergedSettings));
         } catch (e) {
           console.error("Error updating settings cache", e);
         }

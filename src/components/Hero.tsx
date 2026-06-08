@@ -90,18 +90,51 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
   const waUrl = `https://wa.me/${brokerWhatsApp}?text=${welcomeText}`;
   
   // High-fidelity image path of the smiling Brazilian family
-  const familyImgUrl = "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg";
+  const familyImgUrl = settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg";
+
+  // Responsive state for vertical vs horizontal gradient overlap
+  const [isLargeScreen, setIsLargeScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkScreen = () => {
+      setIsLargeScreen(window.innerWidth >= 768);
+    };
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
+
+  const gradientMid = typeof settings.bannerGradientLength === 'number' ? settings.bannerGradientLength : 42;
+  const overlayStyle: React.CSSProperties = isLargeScreen
+    ? {
+        backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.85) ${gradientMid}%, rgba(5, 17, 36, 0.1) 100%)`,
+      }
+    : {
+        backgroundImage: `linear-gradient(to bottom, rgba(5, 17, 36, 0.95) 0%, rgba(5, 17, 36, 0.85) ${gradientMid}%, rgba(5, 17, 36, 0.95) 100%)`,
+      };
+
+  const customHeroSectionStyle: React.CSSProperties = {
+    backgroundImage: `url(${familyImgUrl})`,
+    backgroundPosition: typeof settings.bannerPhotoPosX === 'number' && typeof settings.bannerPhotoPosY === 'number'
+      ? `${settings.bannerPhotoPosX}% ${settings.bannerPhotoPosY}%`
+      : 'right bottom',
+    backgroundSize: settings.bannerPhotoSizeOption === 'custom' && typeof settings.bannerPhotoScale === 'number'
+      ? `${settings.bannerPhotoScale}%`
+      : 'cover',
+    paddingTop: typeof settings.bannerPaddingTop === 'number' ? `${settings.bannerPaddingTop}px` : undefined,
+    paddingBottom: typeof settings.bannerPaddingBottom === 'number' ? `${settings.bannerPaddingBottom}px` : undefined,
+  };
 
   return (
     <div className="w-full bg-[#051124] text-white">
       {/* Hero Core Segment inside the Navy background with the family image spanning the entire section background */}
       <section 
-        className="relative overflow-hidden pt-12 pb-8 md:pt-16 md:pb-12 lg:pt-20 lg:pb-14 bg-cover bg-no-repeat bg-right-bottom md:bg-right"
-        style={{ backgroundImage: `url(${familyImgUrl})` }}
+        className="relative overflow-hidden bg-no-repeat"
+        style={customHeroSectionStyle}
         id="hero-main-section"
       >
         {/* Cinematic shade overlay that keeps the left content completely legible on top of dark rich navy backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#051124]/95 via-[#051124]/85 to-[#051124]/95 md:bg-gradient-to-r md:from-[#051124] md:via-[#051124] md:via-[42%] md:to-transparent z-10" />
+        <div className="absolute inset-0 z-10" style={overlayStyle} />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full z-20">
           <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
