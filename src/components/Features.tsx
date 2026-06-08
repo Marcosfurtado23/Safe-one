@@ -158,13 +158,13 @@ export default function Features({ onOpenSimulator }: FeaturesProps) {
 
         {/* Value pillars conforming to layout footer block list */}
         <div className="mt-16 pt-10 border-t border-slate-150/60 lg:px-6">
-          <div className="grid gap-6 grid-cols-2 lg:grid-cols-4 text-center">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 text-center">
             {valuePillars.map((pil, idx) => (
               <div 
                 key={idx} 
-                className="flex flex-col sm:flex-row items-center justify-center gap-3 p-2 group hover:translate-y-[-1px] transition-transform"
+                className="flex flex-col sm:flex-row items-center justify-center gap-3 p-4 rounded-xl border-2 border-[#dfb448] bg-white shadow-sm group hover:-translate-y-1 hover:shadow-md transition-all duration-300"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors border border-amber-500/5 text-amber-600 flex-shrink-0">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#dfb448]/10 group-hover:bg-[#dfb448]/20 transition-colors text-amber-700 flex-shrink-0">
                   {pil.icon}
                 </div>
                 <span className="font-display text-sm font-bold text-[#0a1829] tracking-tight leading-snug">

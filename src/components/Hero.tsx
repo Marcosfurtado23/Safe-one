@@ -1,149 +1,241 @@
 import React from 'react';
-import { ShieldCheck, ArrowRight, HeartHandshake } from 'lucide-react';
+import { ShieldCheck, Calculator } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 interface HeroProps {
   onOpenSimulator: () => void;
 }
 
+// Custom gold checkmark for inline benefits list
+const GoldCheckIcon = () => (
+  <svg className="h-5 w-5 text-[#dfb448] shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" stroke="#dfb448" strokeWidth="2" fill="#dfb448" fillOpacity="0.1" />
+    <path d="M8 12L11 15L16 9" stroke="#dfb448" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// High fidelity logo replicas for the carriers
+const PortoSeguroLogo = () => (
+  <div className="flex items-center gap-2 select-none shrink-0" title="Porto Seguro">
+    <div className="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center text-white font-extrabold text-[10px] tracking-tighter shadow-sm">
+      PS
+    </div>
+    <div className="flex flex-col text-left">
+      <span className="text-xs font-black text-slate-900 leading-none">PORTO</span>
+      <span className="text-[9px] font-extrabold text-sky-600 leading-none tracking-widest mt-0.5">SEGURO</span>
+    </div>
+  </div>
+);
+
+const TokioMarineLogo = () => (
+  <div className="flex items-center gap-2 select-none shrink-0" title="Tokio Marine">
+    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white scale-90 shadow-sm">
+      <div className="w-4 h-4 rounded-full border-2 border-white/60 border-r-transparent animate-spin" style={{ animationDuration: '4s' }} />
+    </div>
+    <div className="flex flex-col text-left">
+      <span className="text-[10px] font-black text-slate-900 leading-none tracking-wide">TOKIO MARINE</span>
+      <span className="text-[8px] font-bold text-emerald-600 leading-none tracking-widest mt-0.5">SEGURADORA</span>
+    </div>
+  </div>
+);
+
+const AllianzLogo = () => (
+  <div className="flex items-center gap-2 select-none shrink-0" title="Allianz">
+    <div className="flex items-center gap-1 select-none">
+      <span className="text-xs font-black text-blue-900 leading-none text-sm tracking-tight">Allianz</span>
+      <div className="h-5 w-5 rounded-full border-2 border-blue-950 flex items-center justify-center gap-[1.5px] p-0.5">
+        <div className="w-[1.5px] h-2.5 bg-blue-950 rounded-full" />
+        <div className="w-[1.5px] h-2.5 bg-blue-950 rounded-full" />
+        <div className="w-[1.5px] h-2.5 bg-blue-950 rounded-full" />
+      </div>
+    </div>
+  </div>
+);
+
+const IcatuLogo = () => (
+  <div className="flex items-center gap-1 select-none shrink-0" title="Icatu Seguros">
+    <div className="flex flex-col text-left">
+      <span className="text-xs font-black text-amber-600 italic leading-none tracking-tight">Icatu</span>
+      <span className="text-[9px] font-extrabold text-slate-800 leading-none uppercase tracking-[0.15em] mt-0.5">Seguros</span>
+    </div>
+  </div>
+);
+
+const MagLogo = () => (
+  <div className="flex items-center gap-1 select-none shrink-0" title="MAG Seguros">
+    <div className="flex flex-col text-left">
+      <span className="text-xs font-black text-sky-850 leading-none italic tracking-tight uppercase">MAG</span>
+      <span className="text-[9px] font-bold text-[#c5912a] uppercase leading-none tracking-wider mt-0.5">SEGUROS</span>
+    </div>
+  </div>
+);
+
+const PrudentialLogo = () => (
+  <div className="flex items-center gap-2 select-none shrink-0" title="Prudential do Brasil">
+    <div className="w-8 h-8 rounded-full border border-sky-800 flex items-center justify-center bg-sky-50 relative overflow-hidden shadow-sm">
+      <div className="absolute bottom-1 w-5 h-3 bg-sky-900 rounded-t-full scale-x-125 translate-y-1" />
+      <div className="absolute top-1 right-[5px] w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+    </div>
+    <div className="flex flex-col text-left">
+      <span className="text-[10px] font-black text-sky-900 leading-none">Prudential</span>
+      <span className="text-[7.5px] font-bold text-slate-500 leading-none tracking-wider uppercase">do Brasil</span>
+    </div>
+  </div>
+);
+
 export default function Hero({ onOpenSimulator }: HeroProps) {
   const { settings } = useSettings();
   const brokerWhatsApp = settings.brokerWhatsApp;
-  const welcomeText = encodeURIComponent("Olá! Vim através do site da SafeOne e gostaria de simular um Seguro de Vida com um specialist.");
+  const welcomeText = encodeURIComponent("Olá! Vim através do site da SafeOne e gostaria de simular um Seguro de Vida com um especialista.");
   const waUrl = `https://wa.me/${brokerWhatsApp}?text=${welcomeText}`;
-
   
   // High-fidelity image path of the smiling Brazilian family
   const familyImgUrl = "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg";
 
-  const partners = [
-    { name: "Porto Seguro", style: "text-blue-600 font-extrabold" },
-    { name: "Tokio Marine", style: "text-emerald-700 font-bold" },
-    { name: "Allianz", style: "text-blue-900 font-black" },
-    { name: "Icatu Seguros", style: "text-cyan-800 font-extrabold font-serif italic" },
-    { name: "MAG Seguros", style: "text-indigo-950 font-bold tracking-tight" },
-    { name: "Prudential", style: "text-sky-600 font-extrabold" }
-  ];
-
   return (
-    <div className="bg-white">
-      {/* Hero Container */}
-      <section className="relative overflow-hidden pt-12 pb-16 md:pt-16 md:pb-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
+    <div className="w-full bg-[#051124] text-white">
+      {/* Hero Core Segment inside the Navy background with the family image spanning the entire section background */}
+      <section 
+        className="relative overflow-hidden pt-12 pb-16 md:pt-16 md:pb-24 lg:pt-20 lg:pb-28 bg-cover bg-no-repeat bg-right-bottom md:bg-right"
+        style={{ backgroundImage: `url(${familyImgUrl})` }}
+        id="hero-main-section"
+      >
+        {/* Cinematic shade overlay that keeps the left content completely legible on top of dark rich navy backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#051124]/95 via-[#051124]/85 to-[#051124]/95 md:bg-gradient-to-r md:from-[#051124] md:via-[#051124] md:via-[42%] md:to-transparent z-10" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full z-20">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
             
-            {/* Left Content Column (7 columns) */}
-            <div className="lg:col-span-5 space-y-7 text-left" id="hero-left-content">
+            {/* Left Column Content (5 columns) */}
+            <div className="lg:col-span-5 space-y-8 text-left" id="hero-left-content">
               
-              {/* Headings mimicking typography in mockup */}
-              <div className="space-y-4">
-                <h1 className="font-display text-4xl font-extrabold tracking-tight text-[#0a1829] sm:text-5xl lg:text-[54px] leading-[1.12]">
-                  Sua família está protegida para <br className="hidden sm:inline" />
-                  o <span className="text-[#c5912a]">inesperado?</span>
+              {/* Headings mimicking typography in image */}
+              <div className="space-y-5">
+                <h1 className="font-sans text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-white leading-[1.12]">
+                  Sua família está <br />
+                  preparada para <br />
+                  o <span className="text-[#dfb448]">inesperado?</span>
                 </h1>
                 
-                <p className="text-base sm:text-lg text-slate-650 font-medium leading-relaxed max-w-xl">
-                  Segurança e tranquilidade para o hoje e o amanhã. Planos sob medida para cada fase da sua vida.
+                <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl font-normal">
+                  O seguro de vida garante proteção financeira e tranquilidade para quem você mais ama, mesmo quando você não puder estar presente.
                 </p>
               </div>
 
-              {/* Main Golden CTA Button conforming to image */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 rounded-xl bg-[#c5912a] hover:bg-[#b08020] px-7 py-4 text-base font-bold text-white shadow-xl shadow-amber-500/10 transition-all duration-200 hover:scale-[1.02]"
-                    id="hero-gold-whatsapp-btn"
-                  >
-                    <img 
-                      src="https://i.postimg.cc/LsWKdQK2/file-00000000db98720e82af712d5976a7f5.png"
-                      alt="WhatsApp"
-                      className="h-6 w-6 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                    <span>Falar com um especialista</span>
-                  </a>
+              {/* Main Dual CTAs matching visual mockup */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                
+                {/* 1. Simulator Button on Gold Background */}
+                <button
+                  onClick={onOpenSimulator}
+                  className="flex items-center gap-3 bg-[#c5912a] hover:bg-[#dfb448] text-white px-5 py-3.5 rounded-xl transition duration-200 shadow-xl border border-shadow hover:scale-[1.02] text-left cursor-pointer active:scale-95"
+                  id="hero-simulation-btn"
+                >
+                  <Calculator className="h-6 w-6 text-white shrink-0" />
+                  <div className="flex flex-col select-none">
+                    <span className="text-sm font-extrabold leading-tight">Simule agora seu plano</span>
+                    <span className="text-[10px] text-white/85 leading-none mt-1 font-medium">É rápido e sem compromisso</span>
+                  </div>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={onOpenSimulator}
-                    className="text-sm font-bold text-[#c5912a] hover:text-[#b08020] hover:underline py-2.5 px-4 cursor-pointer"
-                  >
-                    Ou simular online →
-                  </button>
+                {/* 2. Speak to Broker on WhatsApp Button with gold border outline */}
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-transparent hover:bg-white/5 text-white px-5 py-3.5 rounded-xl border border-white/20 hover:border-[#dfb448]/80 transition duration-200 text-left hover:scale-[1.02] active:scale-95"
+                  id="hero-whatsapp-outline-btn"
+                >
+                  <img 
+                    src="https://i.postimg.cc/LsWKdQK2/file-00000000db98720e82af712d5976a7f5.png"
+                    alt="WhatsApp"
+                    className="h-6 w-6 object-contain shrink-0 filter brightness-100"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="flex flex-col select-none">
+                    <span className="text-sm font-extrabold leading-tight text-white">Falar pelo WhatsApp</span>
+                    <span className="text-[10px] text-slate-400 leading-none mt-1 font-medium">Atendimento imediato</span>
+                  </div>
+                </a>
+
+              </div>
+
+              {/* Sub-bullet trust items exactly like picture */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-6 border-t border-white/10 max-w-xl text-slate-300">
+                <div className="flex items-center gap-2">
+                  <GoldCheckIcon />
+                  <span className="text-xs font-semibold tracking-wide text-slate-300">Planos acessíveis</span>
                 </div>
-
-                {/* Subtitle trust tag */}
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/10 text-[#c5912a]">
-                    ✓
-                  </span>
-                  <span>Atendimento rápido e humanizado</span>
+                <div className="flex items-center gap-2">
+                  <GoldCheckIcon />
+                  <span className="text-xs font-semibold tracking-wide text-slate-300">Contratação 100% online</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GoldCheckIcon />
+                  <span className="text-xs font-semibold tracking-wide text-slate-300">Coberturas completas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GoldCheckIcon />
+                  <span className="text-xs font-semibold tracking-wide text-slate-300">Pagamento facilitado</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Right Interactive Card / Family Frame Column (7 columns) */}
-            <div className="lg:col-span-7 relative" id="hero-right-visuals">
+            {/* Right Column Visuals with Family and over-badge (7 columns) - completely blended into section background */}
+            <div className="lg:col-span-7 relative w-full h-[220px] sm:h-[280px] lg:h-[420px] flex items-end justify-center md:justify-end pointer-events-none" id="hero-right-visuals">
               
-              {/* Stack containing Family photo and overlaid gold badge */}
-              <div className="relative rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-xl p-2 sm:p-3">
-                <img
-                  src={familyImgUrl}
-                  alt="Família feliz protegida pela SafeOne"
-                  className="w-full h-auto object-cover rounded-2xl max-h-[460px]"
-                  referrerPolicy="no-referrer"
-                  id="family-hero-hero-img"
-                  onError={(e) => {
-                    // Fallback to beautiful stock representation just in case there is dynamic loading lag
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1000";
-                  }}
-                />
+              {/* Overlaid Navy badge exactly like the mockup bottom-right with a clean gold outline frame */}
+              <div className="rounded-2xl bg-[#051124]/95 border-2 border-[#dfb448] p-5 shadow-2xl text-center animate-fade-in pointer-events-auto max-w-[210px] mb-4 mr-0 sm:mr-4 lg:mr-8 xl:mr-12">
+                <div className="flex flex-col items-center gap-3">
+                  
+                  {/* Golden Shield Crest Icon */}
+                  <svg className="h-10 w-10 text-[#dfb448] shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 8L15 20V50C15 72 35 90 50 94C65 90 85 72 85 50V20L50 8Z" stroke="#dfb448" strokeWidth="6" strokeLinejoin="round" fill="none" />
+                    <path d="M50 16L23 25V48C23 66 38 82 50 86C62 82 77 66 77 48V25L50 16Z" fill="#dfb448" fillOpacity="0.15" />
+                    <path d="M30 32L70 68" stroke="#dfb448" strokeWidth="7" strokeLinecap="round" />
+                  </svg>
 
-                {/* Overlaid Navy badge exactly like the mockup bottom-right */}
-                <div className="absolute bottom-5 right-5 left-5 sm:left-auto sm:max-w-xs rounded-2xl bg-[#051124] border-l-4 border-[#c5912a] p-5 shadow-2xl text-left animate-fade-in">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-[#dfb448]">
-                      <ShieldCheck className="h-5.5 w-5.5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white leading-snug">
-                        Proteção feita para quem você ama e para o que realmente importa.
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-xs font-semibold text-slate-200 leading-relaxed tracking-wide text-center">
+                    Proteção hoje para garantir o amanhã que sua família merece.
+                  </p>
                 </div>
-
               </div>
-              
+
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* Partners List: "Nossos parceiros" Section - faithfully matching image */}
-      <section className="bg-slate-50 py-10 border-y border-slate-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-6">
-            Nossos parceiros
-          </p>
+      {/* Partners section immediately following the hero on white background - EXACT replica */}
+      <section className="bg-white text-slate-800 py-10 border-t border-slate-100 select-none">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 md:gap-12">
+            
+            {/* Left Header label */}
+            <div className="text-left shrink-0 pl-1">
+              <p className="text-xs md:text-sm font-bold text-slate-800 leading-snug">
+                Trabalhamos com as <br className="hidden lg:inline" />
+                principais seguradoras <br className="hidden lg:inline" />
+                do mercado
+              </p>
+            </div>
 
-          <div id="partner-logos-container" className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6 md:gap-x-12">
-            {partners.map((partner, idx) => (
-              <span
-                key={idx}
-                className={`text-sm sm:text-base md:text-lg tracking-tight select-none opacity-85 hover:opacity-100 transition-opacity whitespace-nowrap ${partner.style}`}
-              >
-                {partner.name}
-              </span>
-            ))}
+            {/* Gray vertical separator line visible only on desktop */}
+            <div className="hidden lg:block h-12 w-[1px] bg-slate-200 shrink-0" />
+
+            {/* Vector representations of actual carrier logos arranged in the precise horizontal layout */}
+            <div className="flex-1 w-full flex flex-wrap items-center justify-center lg:justify-between gap-y-6 gap-x-8 md:gap-x-10 px-2">
+              <PortoSeguroLogo />
+              <TokioMarineLogo />
+              <AllianzLogo />
+              <IcatuLogo />
+              <MagLogo />
+              <PrudentialLogo />
+            </div>
+
           </div>
-
         </div>
       </section>
     </div>

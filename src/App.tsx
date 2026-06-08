@@ -27,13 +27,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 selection:bg-amber-500/20 antialiased pb-16 md:pb-0">
       
-      {/* Top Notification Announcement Bar */}
-      <div className="w-full bg-[#051124] text-center py-2.5 px-4 border-b border-slate-900">
-        <p className="text-[11px] sm:text-xs font-bold text-[#dfb448] tracking-widest uppercase">
-          ⚡ Campanha de Proteção SafeOne: <span className="text-white normal-case">Isenção de carência para acidentes pessoais nesta semana!</span>
-        </p>
-      </div>
-
       {/* Corporate Styled Layout Components */}
       <Navbar onOpenSimulator={() => setIsSimulatorOpen(true)} />
       
