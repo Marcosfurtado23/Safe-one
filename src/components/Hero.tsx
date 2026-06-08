@@ -96,7 +96,7 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
     <div className="w-full bg-[#051124] text-white">
       {/* Hero Core Segment inside the Navy background with the family image spanning the entire section background */}
       <section 
-        className="relative overflow-hidden pt-12 pb-16 md:pt-16 md:pb-24 lg:pt-20 lg:pb-28 bg-cover bg-no-repeat bg-right-bottom md:bg-right"
+        className="relative overflow-hidden pt-12 pb-8 md:pt-16 md:pb-12 lg:pt-20 lg:pb-14 bg-cover bg-no-repeat bg-right-bottom md:bg-right"
         style={{ backgroundImage: `url(${familyImgUrl})` }}
         id="hero-main-section"
       >
@@ -182,27 +182,8 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
 
             </div>
 
-            {/* Right Column Visuals with Family and over-badge (7 columns) - completely blended into section background */}
-            <div className="lg:col-span-7 relative w-full h-[220px] sm:h-[280px] lg:h-[420px] flex items-end justify-center md:justify-end pointer-events-none" id="hero-right-visuals">
-              
-              {/* Overlaid Navy badge exactly like the mockup bottom-right with a clean gold outline frame */}
-              <div className="rounded-2xl bg-[#051124]/95 border-2 border-[#dfb448] p-5 shadow-2xl text-center animate-fade-in pointer-events-auto max-w-[210px] mb-4 mr-0 sm:mr-4 lg:mr-8 xl:mr-12">
-                <div className="flex flex-col items-center gap-3">
-                  
-                  {/* Golden Shield Crest Icon */}
-                  <svg className="h-10 w-10 text-[#dfb448] shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 8L15 20V50C15 72 35 90 50 94C65 90 85 72 85 50V20L50 8Z" stroke="#dfb448" strokeWidth="6" strokeLinejoin="round" fill="none" />
-                    <path d="M50 16L23 25V48C23 66 38 82 50 86C62 82 77 66 77 48V25L50 16Z" fill="#dfb448" fillOpacity="0.15" />
-                    <path d="M30 32L70 68" stroke="#dfb448" strokeWidth="7" strokeLinecap="round" />
-                  </svg>
-
-                  <p className="text-xs font-semibold text-slate-200 leading-relaxed tracking-wide text-center">
-                    Proteção hoje para garantir o amanhã que sua família merece.
-                  </p>
-                </div>
-              </div>
-
-            </div>
+            {/* Right Column Visuals (7 columns) - completely blended into section background, shortened upward */}
+            <div className="lg:col-span-7 relative w-full h-[60px] sm:h-[100px] lg:h-[150px] pointer-events-none" id="hero-right-visuals" />
 
           </div>
         </div>
