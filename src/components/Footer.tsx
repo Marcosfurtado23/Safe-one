@@ -88,7 +88,16 @@ export default function Footer() {
 
         {/* Separator line */}
         <div className="border-t border-slate-800/60 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
-          <p>© {currentYear} SafeOne Corretora de Seguros. CNPJ <span className="font-mono text-slate-400">{settings.cnpj}</span>. Todos os direitos reservados.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <p>© {currentYear} SafeOne Corretora de Seguros. CNPJ <span className="font-mono text-slate-400">{settings.cnpj}</span>. Todos os direitos reservados.</p>
+            <a 
+              href="#adm" 
+              className="text-slate-650 hover:text-indigo-400 transition-colors font-medium text-[10px] font-mono tracking-wide underline decoration-slate-800 hover:decoration-indigo-400/50" 
+              title="Acesso Administrativo"
+            >
+              /ADM
+            </a>
+          </div>
           <p className="flex items-center gap-1">
             Garantindo segurança <Heart className="h-3.5 w-3.5 text-amber-600 fill-amber-600" /> para sua família.
           </p>

@@ -32,6 +32,7 @@ export default function App() {
       const hash = window.location.hash.toLowerCase();
       if (path === '/adm' || path === '/adm/' || hash === '#adm' || hash === '#/adm') {
         setIsAdminRoute(true);
+        window.scrollTo(0, 0); // Reset scroll to top so the Admin Panel is perfectly visible
       } else {
         setIsAdminRoute(false);
       }
