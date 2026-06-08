@@ -1,0 +1,1017 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail, 
+  signOut, 
+  onAuthStateChanged,
+  User 
+} from 'firebase/auth';
+import { 
+  ShieldCheck, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Settings, 
+  X, 
+  Save, 
+  RotateCcw, 
+  BookOpen, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Upload, 
+  Image as ImageIcon, 
+  ArrowLeft,
+  Calendar,
+  Clock,
+  CheckCircle,
+  FileText,
+  Lock,
+  UserPlus,
+  ArrowRight,
+  LogOut,
+  Sparkles
+} from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { useSettings } from '../context/SettingsContext';
+import { useArticles, Article } from '../context/ArticlesContext';
+
+export default function AdminPanel() {
+  const { settings, updateSettings, resetSettings } = useSettings();
+  const { articles, addArticle, updateArticle, deleteArticle, resetArticles } = useArticles();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Authentication Interface States
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+
+  // General Settings inputs state
+  const [tempWhatsApp, setTempWhatsApp] = useState(settings.brokerWhatsApp);
+  const [tempEmail, setTempEmail] = useState(settings.email);
+  const [tempAddress, setTempAddress] = useState(settings.address);
+  const [tempPhone, setTempPhone] = useState(settings.phone);
+  const [tempSusep, setTempSusep] = useState(settings.susepNumber);
+  const [tempCnpj, setTempCnpj] = useState(settings.cnpj);
+
+  // Articles manager state
+  const [activeTab, setActiveTab] = useState<'settings' | 'articles'>('settings');
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formCategory, setFormCategory] = useState('Proteção Familiar');
+  const [formCustomCategory, setFormCustomCategory] = useState('');
+  const [formTitle, setFormTitle] = useState('');
+  const [formExcerpt, setFormExcerpt] = useState('');
+  const [formReadTime, setFormReadTime] = useState('5 min de leitura');
+  const [formDate, setFormDate] = useState('');
+  const [formImage, setFormImage] = useState('');
+  const [formImageMode, setFormImageMode] = useState<'url' | 'upload' | 'none'>('url');
+  const [formContentText, setFormContentText] = useState('');
+
+  // Notification feedbacks
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Track Auth state changes securely on boot
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Update form values with Settings Context changes
+  useEffect(() => {
+    setTempWhatsApp(settings.brokerWhatsApp);
+    setTempEmail(settings.email);
+    setTempAddress(settings.address);
+    setTempPhone(settings.phone);
+    setTempSusep(settings.susepNumber);
+    setTempCnpj(settings.cnpj);
+  }, [settings]);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
+    try {
+      if (authMode === 'login') {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+        setAuthSuccess('Autenticação realizada com sucesso!');
+      } else if (authMode === 'register') {
+        if (password.length < 6) {
+          setAuthError('A senha precisa ter no mínimo 6 caracteres.');
+          return;
+        }
+        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        setAuthSuccess('Conta criada e logada com sucesso!');
+      } else if (authMode === 'forgot') {
+        const actionCodeSettings = {
+          // Dynamic redirect to the accurate origin (whether local, preview URL or custom domain like safeone.com)
+          url: window.location.origin + (window.location.pathname.startsWith('/adm') ? '/adm' : '/#/adm'),
+          handleCodeInApp: false,
+        };
+        await sendPasswordResetEmail(auth, email.trim(), actionCodeSettings);
+        setAuthSuccess('Link de recuperação enviado com sucesso para o e-mail informado com o redirecionador exclusivo do SafeOne!');
+      }
+    } catch (err: any) {
+      console.error(err);
+      let translateError = 'Ocorreu um erro ao processar. Tente novamente.';
+      if (err.code === 'auth/user-not-found') {
+        translateError = 'E-mail não encontrado na base de dados.';
+      } else if (err.code === 'auth/wrong-password') {
+        translateError = 'Senha incorreta. Tente novamente.';
+      } else if (err.code === 'auth/invalid-email') {
+        translateError = 'E-mail inválido.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        translateError = 'Este e-mail já está cadastrado.';
+      } else if (err.code === 'auth/weak-password') {
+        translateError = 'A senha informada é considerada fraca pela segurança do Firebase.';
+      }
+      setAuthError(translateError);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setAuthSuccess('Sessão encerrada.');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      brokerWhatsApp: tempWhatsApp.trim(),
+      email: tempEmail.trim(),
+      address: tempAddress.trim(),
+      phone: tempPhone.trim(),
+      susepNumber: tempSusep.trim(),
+      cnpj: tempCnpj.trim(),
+    });
+    triggerSuccessFeedback();
+  };
+
+  const triggerSuccessFeedback = () => {
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+    }, 3000);
+  };
+
+  const handleRestoreSettings = () => {
+    if (window.confirm("Deseja realmente restaurar os dados padrão da corretora?")) {
+      resetSettings();
+      triggerSuccessFeedback();
+    }
+  };
+
+  // --- Article management triggers ---
+  const handleOpenNewArticleForm = () => {
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).replace('.', '');
+
+    setEditingArticleId(null);
+    setFormCategory('Proteção Familiar');
+    setFormCustomCategory('');
+    setFormTitle('');
+    setFormExcerpt('');
+    setFormReadTime('5 min de leitura');
+    setFormDate(formattedDate);
+    setFormImage('');
+    setFormImageMode('url');
+    setFormContentText('');
+    setIsFormOpen(true);
+  };
+
+  const handleEditArticleClick = (art: Article) => {
+    setEditingArticleId(art.id);
+    const standardCategories = ['Proteção Familiar', 'Saúde em Vida', 'Sucessão Inteligente'];
+    if (standardCategories.includes(art.category)) {
+      setFormCategory(art.category);
+      setFormCustomCategory('');
+    } else {
+      setFormCategory('Custom');
+      setFormCustomCategory(art.category);
+    }
+
+    setFormTitle(art.title);
+    setFormExcerpt(art.excerpt);
+    setFormReadTime(art.readTime);
+    setFormDate(art.date);
+    
+    if (art.image) {
+      setFormImage(art.image);
+      setFormImageMode(art.image.startsWith('data:') ? 'upload' : 'url');
+    } else {
+      setFormImage('');
+      setFormImageMode('none');
+    }
+    
+    setFormContentText(art.content.join('\n\n'));
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteArticleClick = (id: string, title: string) => {
+    if (window.confirm(`Tem certeza que deseja excluir o artigo "${title}"?`)) {
+      deleteArticle(id);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("A imagem selecionada é muito grande! Escolha um arquivo menor de até 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveArticle = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const finalCategory = formCategory === 'Custom' ? formCustomCategory : formCategory;
+    const finalImage = formImageMode === 'none' ? undefined : formImage;
+    const contentParagraphs = formContentText
+      .split('\n')
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+
+    const articlePayload = {
+      category: finalCategory || 'Geral',
+      title: formTitle,
+      excerpt: formExcerpt,
+      readTime: formReadTime,
+      date: formDate,
+      image: finalImage,
+      content: contentParagraphs.length > 0 ? contentParagraphs : ['Vazio']
+    };
+
+    if (editingArticleId) {
+      updateArticle(editingArticleId, articlePayload);
+    } else {
+      addArticle(articlePayload);
+    }
+
+    setIsFormOpen(false);
+    setEditingArticleId(null);
+    triggerSuccessFeedback();
+  };
+
+  const handleRestoreArticlesDefault = () => {
+    if (window.confirm("Essa ação substituirá todos os artigos criados pelos 3 originais da SafeOne. Deseja prosseguir?")) {
+      resetArticles();
+      setIsFormOpen(false);
+      setEditingArticleId(null);
+      triggerSuccessFeedback();
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#020b18] flex flex-col items-center justify-center p-6 text-white font-sans">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+        <p className="text-xs text-slate-400 font-mono">Carregando credenciais seguras...</p>
+      </div>
+    );
+  }
+
+  // Gated Access: Show Authentication screen styled in Rich Dark Blue (tudo em azul escuro)
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#020b18] flex flex-col items-center justify-center p-4 text-white font-sans relative overflow-hidden">
+        {/* Ambient aesthetic light source */}
+        <div className="absolute -top-[20%] left-[50%] -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-indigo-900/40 to-transparent blur-3xl pointer-events-none rounded-full" />
+        
+        <div className="relative w-full max-w-md rounded-2xl border border-indigo-950/60 bg-[#061225] p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 text-indigo-400 border border-indigo-500/20">
+              <ShieldCheck className="h-6 w-6 stroke-[1.8]" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-bold tracking-tight text-white flex items-center justify-center gap-1.5 justify-center">
+                <span>SafeOne Seguros</span>
+              </h2>
+              <p className="text-xs text-indigo-400/80 font-medium tracking-wide mt-1">
+                {authMode === 'login' && 'Acesso Administrativo Restrito'}
+                {authMode === 'register' && 'Novo Registro de Administrador'}
+                {authMode === 'forgot' && 'Recuperação de Acesso'}
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            
+            {authError && (
+              <div className="p-3.5 rounded-xl border border-red-500/15 bg-red-500/10 text-red-400 text-xs font-medium leading-relaxed">
+                {authError}
+              </div>
+            )}
+
+            {authSuccess && (
+              <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-semibold leading-relaxed">
+                {authSuccess}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="auth-email" className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                E-mail Administrativo
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+                <input
+                  type="email"
+                  id="auth-email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@safeone.com"
+                  className="w-full rounded-xl border border-indigo-950 bg-slate-950 pl-10 pr-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                  required
+                />
+              </div>
+            </div>
+
+            {authMode !== 'forgot' && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label htmlFor="auth-pass" className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider">
+                    Senha de Acesso
+                  </label>
+                  {authMode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('forgot'); setAuthError(''); setAuthSuccess(''); }}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold bg-transparent border-none p-0 cursor-pointer"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+                  <input
+                    type="password"
+                    id="auth-pass"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-indigo-950 bg-slate-950 pl-10 pr-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-700 to-indigo-800 hover:from-indigo-600 hover:to-indigo-700 px-4 py-3.5 text-xs font-bold text-white shadow-xl hover:shadow-indigo-950/50 hover:scale-[1.01] active:scale-95 transition-all text-center cursor-pointer border border-indigo-500/20"
+            >
+              <span>
+                {authMode === 'login' && 'Entrar no Painel'}
+                {authMode === 'register' && 'Cadastrar Administrador'}
+                {authMode === 'forgot' && 'Enviar redifinição de senha'}
+              </span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+
+          </form>
+
+          {/* Separation Footer inside card */}
+          <div className="border-t border-indigo-950/60 pt-4 flex flex-col items-center gap-2.5 text-[11px] text-slate-400">
+            {authMode === 'login' && (
+              <p>
+                Não possui conta administrativa?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccess(''); }}
+                  className="text-indigo-400 hover:text-indigo-300 font-bold bg-transparent border-none p-0 cursor-pointer"
+                >
+                  Cadastre-se aqui
+                </button>
+              </p>
+            )}
+
+            {authMode === 'register' && (
+              <p>
+                Já possui uma conta ativa?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
+                  className="text-indigo-400 hover:text-indigo-300 font-bold bg-transparent border-none p-0 cursor-pointer"
+                >
+                  Entre aqui
+                </button>
+              </p>
+            )}
+
+            {authMode === 'forgot' && (
+              <p>
+                Lembrou seus dados?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
+                  className="text-indigo-400 hover:text-indigo-300 font-bold bg-transparent border-none p-0 cursor-pointer"
+                >
+                  Voltar para o Login
+                </button>
+              </p>
+            )}
+
+            <a
+              href="/"
+              className="text-[10px] text-indigo-400/60 hover:text-indigo-400 flex items-center gap-1 mt-1 transition-all underline font-medium"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              <span>Voltar para o site público</span>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // Immersive Dashboard view for Logged in Administrator - All in Dark Blue Theme
+  return (
+    <div className="min-h-screen bg-[#020b18] text-white font-sans pb-12 relative overflow-hidden">
+      
+      {/* Background radial effects */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-900/10 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-slate-900/20 blur-3xl pointer-events-none rounded-full" />
+
+      {/* Navigation Header */}
+      <header className="bg-[#051124] border-b border-indigo-950/60 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <ShieldCheck className="h-5.5 w-5.5 stroke-[2]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-display text-base font-extrabold tracking-wider leading-none text-white">
+                  SAFEONE
+                </span>
+                <span className="bg-indigo-500/10 text-indigo-300 font-mono text-[8px] font-extrabold px-1.5 py-0.5 rounded border border-indigo-500/10 uppercase tracking-widest leading-none">
+                  ADMIN
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-450 mt-1">Conectado como: <span className="font-mono text-indigo-300">{user.email}</span></p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <a
+              href="/"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-[#03152d] border border-indigo-950 text-xs font-bold text-slate-350 hover:text-white transition-all text-center"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Ver Site Público</span>
+            </a>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-900/30 text-xs font-bold text-red-300 hover:text-white transition-all cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sair</span>
+            </button>
+          </div>
+
+        </div>
+      </header>
+
+      {/* Main Panel Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        
+        <div className="grid gap-6 md:grid-cols-4 items-start">
+          
+          {/* Navigation Sidebar Tabs */}
+          <div className="md:col-span-1 rounded-2xl bg-[#051329] border border-indigo-950/60 p-4 space-y-2">
+            <h3 className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase px-3 mb-3">Módulos Administrativos</h3>
+            
+            <button
+              type="button"
+              onClick={() => { setActiveTab('settings'); setIsFormOpen(false); }}
+              className={`w-full px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center gap-3 cursor-pointer text-left border ${
+                activeTab === 'settings'
+                  ? 'bg-gradient-to-r from-indigo-700 to-indigo-800 text-white border-indigo-500/20 shadow-xl'
+                  : 'text-slate-400 hover:text-white hover:bg-[#081b37] border-transparent'
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              <span>Configurações Gerais</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('articles')}
+              className={`w-full px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center gap-3 cursor-pointer text-left border ${
+                activeTab === 'articles'
+                  ? 'bg-gradient-to-r from-indigo-700 to-indigo-800 text-white border-indigo-500/20 shadow-xl'
+                  : 'text-slate-400 hover:text-white hover:bg-[#081b37] border-transparent'
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Gerenciar Artigos</span>
+            </button>
+
+            {saveSuccess && (
+              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/15 text-[10px] font-bold tracking-wide animate-pulse flex items-center gap-1.5 mt-4">
+                <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Salvo e sincronizado no Firebase</span>
+              </div>
+            )}
+          </div>
+
+          {/* Form Content / Grid Tabs */}
+          <div className="md:col-span-3 rounded-2xl bg-[#051329] border border-indigo-950/60 p-6 sm:p-8">
+            
+            {/* Tab 1: General Settings */}
+            {activeTab === 'settings' && (
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                
+                <div className="border-b border-indigo-950/60 pb-3">
+                  <h3 className="font-display text-base font-extrabold text-white tracking-tight">Configurações Gerais da Corretora</h3>
+                  <p className="text-[11px] text-indigo-400 mt-1">Esses dados são públicos, exceto o WhatsApp do corretor que recebe orçamentos privados.</p>
+                </div>
+
+                <div className="bg-slate-950/40 p-4 rounded-xl border border-indigo-950/40 space-y-4">
+                  <h4 className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase">Canais de Atendimento</h4>
+                  
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        WhatsApp do Corretor / Leads (Ex: 5577981008782)
+                      </label>
+                      <input
+                        type="text"
+                        value={tempWhatsApp}
+                        onChange={(e) => setTempWhatsApp(e.target.value)}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                      <span className="block text-[9px] text-[#dfb448] mt-1.5 font-medium leading-normal">
+                        ★ Este número é estritamente PRIVADO. Somente corretores logados acessam aqui. Ele recebe todos os direcionamentos do simulador!
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        Telefone Exibido (Atendimento Público)
+                      </label>
+                      <input
+                        type="text"
+                        value={tempPhone}
+                        onChange={(e) => setTempPhone(e.target.value)}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                      E-mail Oficial SafeOne
+                    </label>
+                    <input
+                      type="email"
+                      value={tempEmail}
+                      onChange={(e) => setTempEmail(e.target.value)}
+                      className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                      Endereço Corporativo (Rodapé)
+                    </label>
+                    <input
+                      type="text"
+                      value={tempAddress}
+                      onChange={(e) => setTempAddress(e.target.value)}
+                      className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/40 p-4 rounded-xl border border-indigo-950/40 space-y-4">
+                  <h4 className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase">Parâmetros Regulatórios SUSEP</h4>
+                  
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        Habilitação SUSEP
+                      </label>
+                      <input
+                        type="text"
+                        value={tempSusep}
+                        onChange={(e) => setTempSusep(e.target.value)}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        CNPJ SafeOne
+                      </label>
+                      <input
+                        type="text"
+                        value={tempCnpj}
+                        onChange={(e) => setTempCnpj(e.target.value)}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleRestoreSettings}
+                    className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Valores Originais</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-900/30 cursor-pointer"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>Salvar e Atualizar Firebase</span>
+                  </button>
+                </div>
+
+              </form>
+            )}
+
+            {/* Tab 2: Articles Manager */}
+            {activeTab === 'articles' && (
+              <div className="space-y-4">
+                
+                {!isFormOpen ? (
+                  <div className="space-y-6 animate-[#021025]">
+                    
+                    <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-950/40 p-4 rounded-xl border border-indigo-950/50">
+                      <div>
+                        <h4 className="font-display font-bold text-white text-sm">Biblioteca de Dicas & Notícias</h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Sincronizado automaticamente com o banco de dados principal do Firestore.</p>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleRestoreArticlesDefault}
+                          className="bg-transparent border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all font-bold"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span>Padrão Fábrica</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={handleOpenNewArticleForm}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-900/20 cursor-pointer"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Nova Matéria</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {articles.map((art) => (
+                        <div 
+                          key={art.id} 
+                          className="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-indigo-950 bg-slate-950/40 hover:border-indigo-500/20 transition-all group"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            
+                            <div className="hidden sm:block h-12 w-12 rounded-lg bg-slate-900 flex-shrink-0 overflow-hidden border border-indigo-950">
+                              {art.image ? (
+                                <img 
+                                  src={art.image} 
+                                  alt="" 
+                                  className="h-full w-full object-cover" 
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="h-full w-full bg-[#0a1b32] flex items-center justify-center text-[8px] text-indigo-400 font-bold uppercase text-center p-0.5">
+                                  Texto
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <span className="inline-block px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 text-[9px] font-extrabold uppercase mb-1">
+                                {art.category}
+                              </span>
+                              <h5 className="font-display text-[12px] font-extrabold text-white leading-tight truncate group-hover:text-indigo-400 transition-colors">
+                                {art.title}
+                              </h5>
+                              <div className="flex gap-2 text-[9px] text-slate-450 mt-1 font-mono items-center">
+                                <span className="flex items-center gap-0.5"><Calendar className="h-2.5 w-2.5" /> {art.date}</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> {art.readTime}</span>
+                              </div>
+                            </div>
+
+                          </div>
+
+                          <div className="flex gap-2 ml-2 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleEditArticleClick(art)}
+                              className="h-8 w-8 rounded-lg bg-[#07172f] border border-indigo-950 hover:border-indigo-500/40 text-slate-350 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                              title="Editar postagem"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteArticleClick(art.id, art.title)}
+                              className="h-8 w-8 rounded-lg bg-[#07172f] border border-indigo-950 hover:border-red-500/40 text-slate-355 hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
+                              title="Deletar postagem"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                        </div>
+                      ))}
+
+                      {articles.length === 0 && (
+                        <div className="text-center py-12 bg-[#020d1c] rounded-xl border border-dashed border-indigo-950">
+                          <FileText className="h-10 w-10 text-slate-605 mx-auto mb-2" />
+                          <p className="text-xs text-slate-400">Nenhuma postagem criada.</p>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveArticle} className="space-y-4 bg-slate-950/40 p-5 rounded-xl border border-indigo-950/60 animate-fade-in text-xs">
+                    
+                    <div className="flex items-center gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsFormOpen(false)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#07172f] hover:bg-slate-900 border border-indigo-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-[10px] font-bold"
+                      >
+                        <ArrowLeft className="h-3 w-3" />
+                        <span>Voltar a Lista</span>
+                      </button>
+                      <h4 className="font-display font-black text-indigo-400 tracking-wide ml-2 uppercase text-xs">
+                        {editingArticleId ? 'Editar Matéria no Firebase' : 'Inserir Nova Matéria'}
+                      </h4>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                          Categoria da Matéria
+                        </label>
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value)}
+                          className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-3.5 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all cursor-pointer"
+                          required
+                        >
+                          <option value="Proteção Familiar">Proteção Familiar</option>
+                          <option value="Saúde em Vida">Saúde em Vida</option>
+                          <option value="Sucessão Inteligente">Sucessão Inteligente</option>
+                          <option value="Custom">Escrever Categoria Personalizada...</option>
+                        </select>
+                      </div>
+
+                      {formCategory === 'Custom' && (
+                        <div className="animate-fade-in">
+                          <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                            Escreva Categoria Customizada
+                          </label>
+                          <input
+                            type="text"
+                            value={formCustomCategory}
+                            onChange={(e) => setFormCustomCategory(e.target.value)}
+                            placeholder="Ex: Previdência Privada"
+                            className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        Título de Capa
+                      </label>
+                      <input
+                        type="text"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        placeholder="Ex: Guia prático de capitais seguros..."
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-semibold"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        Breve Resumo (Introdução de listagem)
+                      </label>
+                      <textarea
+                        value={formExcerpt}
+                        onChange={(e) => setFormExcerpt(e.target.value)}
+                        placeholder="Ex: Entenda os erros mais frequentes na hora de calibrar capitais de vida..."
+                        rows={2}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all resize-none"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                          Data de Apresentação (Exibição)
+                        </label>
+                        <input
+                          type="text"
+                          value={formDate}
+                          onChange={(e) => setFormDate(e.target.value)}
+                          placeholder="Ex: 08 Jun, 2026"
+                          className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                          Tempo para Leitura
+                        </label>
+                        <input
+                          type="text"
+                          value={formReadTime}
+                          onChange={(e) => setFormReadTime(e.target.value)}
+                          placeholder="Ex: 5 min de leitura"
+                          className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/40 border border-indigo-950/50 p-4 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                          Mídia / Ilustração do Artigo
+                        </label>
+                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 rounded-sm px-1.5 font-bold font-mono">Formato Imagem</span>
+                      </div>
+
+                      <div className="flex gap-2 bg-slate-950 p-1 border border-indigo-950 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setFormImageMode('url')}
+                          className={`flex-1 py-1.5 rounded text-[10px] font-extrabold cursor-pointer transition-all ${
+                            formImageMode === 'url' ? 'bg-indigo-650 text-white' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Caminho/URL da Imagem
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => setFormImageMode('upload')}
+                          className={`flex-1 py-1.5 rounded text-[10px] font-extrabold cursor-pointer transition-all ${
+                            formImageMode === 'upload' ? 'bg-indigo-650 text-white' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Upload de Imagem Local (Base64)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setFormImageMode('none')}
+                          className={`flex-1 py-1.5 rounded text-[10px] font-extrabold cursor-pointer transition-all ${
+                            formImageMode === 'none' ? 'bg-indigo-650 text-white' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Sem Imagem (Estilo Editorial)
+                        </button>
+                      </div>
+
+                      {formImageMode === 'url' && (
+                        <div className="space-y-1">
+                          <input
+                            type="url"
+                            value={formImage}
+                            onChange={(e) => setFormImage(e.target.value)}
+                            placeholder="Insira https://images.unsplash.com/..."
+                            className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none transition-all font-mono"
+                          />
+                        </div>
+                      )}
+
+                      {formImageMode === 'upload' && (
+                        <div className="space-y-3">
+                          <div className="border border-dashed border-indigo-950 rounded-xl p-3 flex flex-col items-center justify-center bg-slate-950/20">
+                            {formImage ? (
+                              <div className="relative h-20 w-32 rounded-lg overflow-hidden border border-indigo-950">
+                                <img src={formImage} alt="Upload preview" className="h-full w-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => setFormImage('')}
+                                  className="absolute top-1 right-1 h-5 w-5 bg-black/70 hover:bg-black rounded-full flex items-center justify-center"
+                                >
+                                  <X className="h-3 w-3 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="cursor-pointer flex flex-col items-center">
+                                <Upload className="h-6 w-6 text-indigo-400 mb-1" />
+                                <span className="text-[10px] text-indigo-300 font-bold">Clique para selecionar foto</span>
+                                <span className="text-[8px] text-slate-500 mt-0.5">JPEG, PNG ou WEBP até 2MB</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleFileUpload}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                        Conteúdo da Matéria (Parágrafos)
+                      </label>
+                      <textarea
+                        value={formContentText}
+                        onChange={(e) => setFormContentText(e.target.value)}
+                        placeholder="Desenvolva o texto da matéria neste campo.&#13;&#10;Para iniciar um novo parágrafo, dê um espaçamento com ENTER (quebra de linha)."
+                        rows={10}
+                        className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-3 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none transition-all font-sans leading-relaxed"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsFormOpen(false)}
+                        className="px-4 py-2.5 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                      >
+                        Cancelar
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-950/40 cursor-pointer"
+                      >
+                        Publicar Matéria
+                      </button>
+                    </div>
+
+                  </form>
+                )}
+
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}

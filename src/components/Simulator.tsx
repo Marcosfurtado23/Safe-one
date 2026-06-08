@@ -7,7 +7,6 @@ import {
   UserCheck, 
   ShieldCheck, 
   CircleCheck,
-  Smartphone,
   X
 } from 'lucide-react';
 import { ClientInfo, AdditionalCoverages, SimulationResult } from '../types';
@@ -486,28 +485,6 @@ _Desejo receber contato de um especialista para oficializar a simulação._`;
                   </div>
                 </div>
 
-              </div>
-            </div>
-
-            {/* Customizer Settings */}
-            <div className="rounded-2xl border border-slate-800 bg-[#07172f] p-6 sm:p-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Smartphone className="h-4 w-4 text-[#dfb448]" />
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Configuração do WhatsApp Corretor</span>
-              </div>
-              <div className="space-y-3">
-                <label htmlFor="broker-phone" className="block text-xs text-slate-400">
-                  Insira o número de WhatsApp que receberá a mensagem de orçamento gerada:
-                </label>
-                <input
-                  type="text"
-                  id="broker-phone"
-                  value={whatsappCorretor}
-                  onChange={(e) => setWhatsappCorretor(e.target.value)}
-                  placeholder="Ex: 5577981008782"
-                  className="max-w-xs rounded-lg border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white focus:border-[#dfb448] focus:outline-none"
-                />
-                <span className="block text-[10px] text-slate-500">Coloque país (55) + DDD + número. Ex: 5577981008782</span>
               </div>
             </div>
 

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 
 export interface Article {
   id: string;
@@ -85,7 +87,52 @@ export function ArticlesProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_ARTICLES;
   });
 
-  const saveArticles = (newArticles: Article[]) => {
+  // Fetch articles from Firestore in real time
+  useEffect(() => {
+    const articlesColRef = collection(db, 'articles');
+    const unsubscribe = onSnapshot(articlesColRef, (snapshot) => {
+      if (!snapshot.empty) {
+        const loadedArticles: Article[] = [];
+        snapshot.forEach((docSnap) => {
+          loadedArticles.push(docSnap.data() as Article);
+        });
+        // Sort from newest to oldest or keep ordering
+        setArticles(loadedArticles);
+        try {
+          localStorage.setItem('safeone_articles', JSON.stringify(loadedArticles));
+        } catch (e) {
+          console.error('Error caching articles to localStorage', e);
+        }
+      }
+    }, (error) => {
+      console.warn("Firestore articles lookup skipped (using cache/defaults):", error.message);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // When admin logs in, seed the default articles list in Firestore if it is empty
+  useEffect(() => {
+    const seedArticles = async () => {
+      if (auth.currentUser) {
+        try {
+          const articlesColRef = collection(db, 'articles');
+          const snapshot = await getDocs(articlesColRef);
+          if (snapshot.empty) {
+            console.log("Seeding default articles into Firestore...");
+            for (const item of DEFAULT_ARTICLES) {
+              await setDoc(doc(db, 'articles', item.id), item);
+            }
+          }
+        } catch (e) {
+          console.warn("Skipped checking articles seed on Firestore (auth state load delay)", e);
+        }
+      }
+    };
+    seedArticles();
+  }, []);
+
+  const saveArticlesCache = (newArticles: Article[]) => {
     setArticles(newArticles);
     try {
       localStorage.setItem('safeone_articles', JSON.stringify(newArticles));
@@ -94,31 +141,86 @@ export function ArticlesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addArticle = (newArt: Omit<Article, 'id'>) => {
+  const addArticle = async (newArt: Omit<Article, 'id'>) => {
+    const id = `article-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const freshArticle: Article = {
       ...newArt,
-      id: `article-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      id
     };
-    saveArticles([freshArticle, ...articles]);
+    const updated = [freshArticle, ...articles];
+    saveArticlesCache(updated);
+
+    // Sync to Firestore if signed in
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'articles', id), freshArticle);
+      } catch (e) {
+        handleFirestoreError(e, OperationType.CREATE, `articles/${id}`);
+      }
+    }
   };
 
-  const updateArticle = (id: string, updatedFields: Partial<Article>) => {
+  const updateArticle = async (id: string, updatedFields: Partial<Article>) => {
     const updated = articles.map((art) => {
       if (art.id === id) {
         return { ...art, ...updatedFields };
       }
       return art;
     });
-    saveArticles(updated);
+    saveArticlesCache(updated);
+
+    // Sync to Firestore if signed in
+    if (auth.currentUser) {
+      try {
+        const artDocRef = doc(db, 'articles', id);
+        const existingDoc = await getDoc(artDocRef);
+        if (existingDoc.exists()) {
+          const merged = { ...existingDoc.data(), ...updatedFields } as Article;
+          await setDoc(artDocRef, merged);
+        } else {
+          const localItem = articles.find(a => a.id === id);
+          if (localItem) {
+            await setDoc(artDocRef, { ...localItem, ...updatedFields });
+          }
+        }
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `articles/${id}`);
+      }
+    }
   };
 
-  const deleteArticle = (id: string) => {
+  const deleteArticle = async (id: string) => {
     const updated = articles.filter((art) => art.id !== id);
-    saveArticles(updated);
+    saveArticlesCache(updated);
+
+    // Sync to Firestore if signed in
+    if (auth.currentUser) {
+      try {
+        await deleteDoc(doc(db, 'articles', id));
+      } catch (e) {
+        handleFirestoreError(e, OperationType.DELETE, `articles/${id}`);
+      }
+    }
   };
 
-  const resetArticles = () => {
-    saveArticles(DEFAULT_ARTICLES);
+  const resetArticles = async () => {
+    saveArticlesCache(DEFAULT_ARTICLES);
+
+    // Clean articles collection & reseed if admin
+    if (auth.currentUser) {
+      try {
+        const articlesColRef = collection(db, 'articles');
+        const snapshot = await getDocs(articlesColRef);
+        for (const snapDoc of snapshot.docs) {
+          await deleteDoc(doc(db, 'articles', snapDoc.id));
+        }
+        for (const item of DEFAULT_ARTICLES) {
+          await setDoc(doc(db, 'articles', item.id), item);
+        }
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, 'articles');
+      }
+    }
   };
 
   return (

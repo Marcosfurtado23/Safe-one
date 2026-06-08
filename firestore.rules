@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global authentication and context helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Type and structure validator for settings configuration
+    function isValidSettings(data) {
+      return data.keys().hasAll(['brokerWhatsApp', 'email', 'address', 'phone', 'susepNumber', 'cnpj'])
+        && data.keys().size() == 6
+        && data.brokerWhatsApp is string && data.brokerWhatsApp.size() <= 32
+        && data.email is string && data.email.size() <= 128
+        && data.address is string && data.address.size() <= 256
+        && data.phone is string && data.phone.size() <= 32
+        && data.susepNumber is string && data.susepNumber.size() <= 32
+        && data.cnpj is string && data.cnpj.size() <= 32;
+    }
+
+    // Settings Configuration Access Controls
+    match /settings/config {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidSettings(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Type and structure validator for articles
+    function isValidArticle(data) {
+      return data.keys().hasAll(['id', 'category', 'title', 'excerpt', 'readTime', 'date', 'content'])
+        && (data.keys().size() == 7 || (data.keys().size() == 8 && data.keys().hasAny(['image'])))
+        && data.id is string && data.id.size() <= 128
+        && data.category is string && data.category.size() <= 64
+        && data.title is string && data.title.size() <= 256
+        && data.excerpt is string && data.excerpt.size() <= 512
+        && data.readTime is string && data.readTime.size() <= 64
+        && data.date is string && data.date.size() <= 64
+        && data.content is list && data.content.size() <= 100
+        && (!data.keys().hasAny(['image']) || (data.image is string && data.image.size() <= 2500000));
+    }
+
+    // Articles Access Controls
+    match /articles/{articleId} {
+      allow read, list: if true;
+      allow get: if true;
+      allow create, update: if isSignedIn() && isValidId(articleId) && isValidArticle(request.resource.data);
+      allow delete: if isSignedIn() && isValidId(articleId);
+    }
+  }
+}

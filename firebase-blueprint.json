@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Settings": {
+      "title": "Settings",
+      "description": "Contact info and security compliance variables",
+      "type": "object",
+      "properties": {
+        "brokerWhatsApp": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "susepNumber": { "type": "string" },
+        "cnpj": { "type": "string" }
+      },
+      "required": ["brokerWhatsApp", "email", "address", "phone", "susepNumber", "cnpj"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Blog and advice articles curated on the platform",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "readTime": { "type": "string" },
+        "date": { "type": "string" },
+        "image": { "type": "string" },
+        "content": { "type": "array" }
+      },
+      "required": ["id", "category", "title", "excerpt", "readTime", "date", "content"]
+    }
+  },
+  "firestore": {
+    "/settings/config": {
+      "schema": "Settings",
+      "description": "Global metadata, branding compliance references, and contact coordinates"
+    },
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Detailed blog articles for SafeOne insurance topics"
+    }
+  }
+}

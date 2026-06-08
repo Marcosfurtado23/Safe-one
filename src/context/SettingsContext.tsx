@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 
 export interface AppSettings {
   brokerWhatsApp: string;
@@ -40,17 +42,81 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_SETTINGS;
   });
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    setSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
-      localStorage.setItem('safeone_settings', JSON.stringify(updated));
-      return updated;
+  // Listen to Firestore real-time settings configuration document
+  useEffect(() => {
+    const configDocRef = doc(db, 'settings', 'config');
+    const unsubscribe = onSnapshot(configDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const firestoreData = snapshot.data() as AppSettings;
+        setSettings(firestoreData);
+        try {
+          localStorage.setItem('safeone_settings', JSON.stringify(firestoreData));
+        } catch (e) {
+          console.error("Error updating settings cache", e);
+        }
+      }
+    }, (error) => {
+      console.warn("Firestore settings lookup skipped (using cache/defaults):", error.message);
     });
+
+    return () => unsubscribe();
+  }, []);
+
+  // When admin signs in, auto-seed the configuration if it's empty in Firestore
+  useEffect(() => {
+    const checkAndSeed = async () => {
+      if (auth.currentUser) {
+        try {
+          const configDocRef = doc(db, 'settings', 'config');
+          const snapshot = await getDoc(configDocRef);
+          if (!snapshot.exists()) {
+            await setDoc(configDocRef, settings);
+            console.log("Firestore settings auto-seeded successfully");
+          }
+        } catch (e) {
+          console.warn("Skipped checking settings seed on Firestore (auth state load delay)", e);
+        }
+      }
+    };
+    checkAndSeed();
+  }, [settings]);
+
+  const updateSettings = async (newSettings: Partial<AppSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    try {
+      localStorage.setItem('safeone_settings', JSON.stringify(updated));
+    } catch (e) {
+      console.error("Error setting local storage cache", e);
+    }
+
+    // Sync to Firestore if signed in
+    if (auth.currentUser) {
+      try {
+        const configDocRef = doc(db, 'settings', 'config');
+        await setDoc(configDocRef, updated);
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, 'settings/config');
+      }
+    }
   };
 
-  const resetSettings = () => {
+  const resetSettings = async () => {
     setSettings(DEFAULT_SETTINGS);
-    localStorage.removeItem('safeone_settings');
+    try {
+      localStorage.removeItem('safeone_settings');
+    } catch (e) {
+      console.error("Error removing local storage cache", e);
+    }
+
+    if (auth.currentUser) {
+      try {
+        const configDocRef = doc(db, 'settings', 'config');
+        await setDoc(configDocRef, DEFAULT_SETTINGS);
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, 'settings/config');
+      }
+    }
   };
 
   return (
@@ -67,3 +133,4 @@ export function useSettings() {
   }
   return context;
 }
+

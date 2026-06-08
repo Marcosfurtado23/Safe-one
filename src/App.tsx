@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -9,11 +9,13 @@ import Faq from './components/Faq';
 import Footer from './components/Footer';
 import WhatsappBubble from './components/WhatsappBubble';
 import AiAssistant from './components/AiAssistant';
+import AdminPanel from './components/AdminPanel';
 import { Phone } from 'lucide-react';
 import { useSettings } from './context/SettingsContext';
 
 export default function App() {
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isAdminRoute, setIsAdminRoute] = useState(false);
   const { settings } = useSettings();
   const brokerWhatsApp = settings.brokerWhatsApp; 
   const welcomeText = encodeURIComponent("Olá! Estou no site da SafeOne Seguros e gostaria de conversar com um corretor sobre os planos.");
@@ -23,6 +25,32 @@ export default function App() {
   const telNumberStr = settings.phone.replace(/[^\d+]/g, '');
   const phoneCallUrl = `tel:${telNumberStr}`;
 
+  // URL listener to detect administration route privately
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/adm' || path === '/adm/' || hash === '#adm' || hash === '#/adm') {
+        setIsAdminRoute(true);
+      } else {
+        setIsAdminRoute(false);
+      }
+    };
+
+    // Track immediately on startup
+    handleRouteChange();
+
+    window.addEventListener('hashchange', handleRouteChange);
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
+  if (isAdminRoute) {
+    return <AdminPanel />;
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 selection:bg-amber-500/20 antialiased pb-16 md:pb-0">
