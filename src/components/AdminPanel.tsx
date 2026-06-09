@@ -53,6 +53,15 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
+  // Sincronização controlada para evitar que os controles deslizantes voltem ao valor antigo enquanto o usuário arrasta
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Estados de salvamento para os parceiros
+  const [partnerError, setPartnerError] = useState('');
+  const [isSavingPartner, setIsSavingPartner] = useState(false);
+
   // General Settings inputs state
   const [tempWhatsApp, setTempWhatsApp] = useState(settings.brokerWhatsApp);
   const [tempEmail, setTempEmail] = useState(settings.email);
@@ -62,7 +71,7 @@ export default function AdminPanel() {
   const [tempCnpj, setTempCnpj] = useState(settings.cnpj);
 
   // Banner Settings inputs state
-  const [tempBannerImageUrl, setTempBannerImageUrl] = useState(settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg");
+  const [tempBannerImageUrl, setTempBannerImageUrl] = useState(settings.bannerImageUrl || "https://i.postimg.cc/65M471Pn/Familia-feliz-sentado-em-sofa-202606071250-(1).jpg");
   const [tempBannerPaddingTop, setTempBannerPaddingTop] = useState(settings.bannerPaddingTop ?? 80);
   const [tempBannerPaddingBottom, setTempBannerPaddingBottom] = useState(settings.bannerPaddingBottom ?? 56);
   const [tempBannerGradientLength, setTempBannerGradientLength] = useState(settings.bannerGradientLength ?? 42);
@@ -183,23 +192,26 @@ export default function AdminPanel() {
     return () => unsubscribe();
   }, []);
 
-  // Update form values with Settings Context changes
+  // Update form values with Settings Context changes safely (only once, or when hasLoadedSettings is reset/false)
   useEffect(() => {
-    setTempWhatsApp(settings.brokerWhatsApp);
-    setTempEmail(settings.email);
-    setTempAddress(settings.address);
-    setTempPhone(settings.phone);
-    setTempSusep(settings.susepNumber);
-    setTempCnpj(settings.cnpj);
-    setTempBannerImageUrl(settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg");
-    setTempBannerPaddingTop(settings.bannerPaddingTop ?? 80);
-    setTempBannerPaddingBottom(settings.bannerPaddingBottom ?? 56);
-    setTempBannerGradientLength(settings.bannerGradientLength ?? 42);
-    setTempBannerPhotoPosX(settings.bannerPhotoPosX ?? 100);
-    setTempBannerPhotoPosY(settings.bannerPhotoPosY ?? 100);
-    setTempBannerPhotoSizeOption(settings.bannerPhotoSizeOption || "cover");
-    setTempBannerPhotoScale(settings.bannerPhotoScale ?? 100);
-  }, [settings]);
+    if (settings && !hasLoadedSettings) {
+      setTempWhatsApp(settings.brokerWhatsApp);
+      setTempEmail(settings.email);
+      setTempAddress(settings.address);
+      setTempPhone(settings.phone);
+      setTempSusep(settings.susepNumber);
+      setTempCnpj(settings.cnpj);
+      setTempBannerImageUrl(settings.bannerImageUrl || "https://i.postimg.cc/65M471Pn/Familia-feliz-sentado-em-sofa-202606071250-(1).jpg");
+      setTempBannerPaddingTop(settings.bannerPaddingTop ?? 80);
+      setTempBannerPaddingBottom(settings.bannerPaddingBottom ?? 56);
+      setTempBannerGradientLength(settings.bannerGradientLength ?? 42);
+      setTempBannerPhotoPosX(settings.bannerPhotoPosX ?? 100);
+      setTempBannerPhotoPosY(settings.bannerPhotoPosY ?? 100);
+      setTempBannerPhotoSizeOption(settings.bannerPhotoSizeOption || "cover");
+      setTempBannerPhotoScale(settings.bannerPhotoScale ?? 100);
+      setHasLoadedSettings(true);
+    }
+  }, [settings, hasLoadedSettings]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,38 +265,66 @@ export default function AdminPanel() {
     }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings({
-      brokerWhatsApp: tempWhatsApp.trim(),
-      email: tempEmail.trim(),
-      address: tempAddress.trim(),
-      phone: tempPhone.trim(),
-      susepNumber: tempSusep.trim(),
-      cnpj: tempCnpj.trim(),
-      bannerImageUrl: tempBannerImageUrl,
-      bannerPaddingTop: Number(tempBannerPaddingTop),
-      bannerPaddingBottom: Number(tempBannerPaddingBottom),
-      bannerGradientLength: Number(tempBannerGradientLength),
-      bannerPhotoPosX: Number(tempBannerPhotoPosX),
-      bannerPhotoPosY: Number(tempBannerPhotoPosY),
-      bannerPhotoSizeOption: tempBannerPhotoSizeOption,
-      bannerPhotoScale: Number(tempBannerPhotoScale),
-    });
-    triggerSuccessFeedback();
+    setSaveError('');
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      await updateSettings({
+        brokerWhatsApp: tempWhatsApp.trim(),
+        email: tempEmail.trim(),
+        address: tempAddress.trim(),
+        phone: tempPhone.trim(),
+        susepNumber: tempSusep.trim(),
+        cnpj: tempCnpj.trim(),
+        bannerImageUrl: tempBannerImageUrl,
+        bannerPaddingTop: Number(tempBannerPaddingTop),
+        bannerPaddingBottom: Number(tempBannerPaddingBottom),
+        bannerGradientLength: Number(tempBannerGradientLength),
+        bannerPhotoPosX: Number(tempBannerPhotoPosX),
+        bannerPhotoPosY: Number(tempBannerPhotoPosY),
+        bannerPhotoSizeOption: tempBannerPhotoSizeOption,
+        bannerPhotoScale: Number(tempBannerPhotoScale),
+      });
+      // Force refreshing loaded values
+      setHasLoadedSettings(false);
+      triggerSuccessFeedback();
+    } catch (err: any) {
+      console.error(err);
+      let errMsg = "Falha ao sincronizar as alterações no Firebase Firestore. Verifique suas permissões.";
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed && parsed.error) errMsg = `Erro: ${parsed.error}`;
+      } catch (e) {}
+      setSaveError(errMsg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const triggerSuccessFeedback = () => {
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
-    }, 3000);
+    }, 4000);
   };
 
-  const handleRestoreSettings = () => {
+  const handleRestoreSettings = async () => {
     if (window.confirm("Deseja realmente restaurar os dados padrão da corretora?")) {
-      resetSettings();
-      triggerSuccessFeedback();
+      setSaveError('');
+      setIsSaving(true);
+      try {
+        await resetSettings();
+        setHasLoadedSettings(false);
+        triggerSuccessFeedback();
+      } catch (err: any) {
+        console.error(err);
+        setSaveError("Erro ao restaurar configurações originais.");
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -419,6 +459,7 @@ export default function AdminPanel() {
     setPartnerName('');
     setPartnerLogoUrl('');
     setPartnerLogoImageMode('url');
+    setPartnerError('');
     setIsPartnerFormOpen(true);
   };
 
@@ -427,23 +468,32 @@ export default function AdminPanel() {
     setPartnerName(partner.name);
     setPartnerLogoUrl(partner.logoUrl);
     setPartnerLogoImageMode(partner.logoUrl.startsWith('data:') ? 'upload' : 'url');
+    setPartnerError('');
     setIsPartnerFormOpen(true);
   };
 
-  const handleDeletePartnerClick = (id: string, name: string) => {
+  const handleDeletePartnerClick = async (id: string, name: string) => {
     if (window.confirm(`Tem certeza que deseja excluir o parceiro "${name}"?`)) {
-      deletePartner(id);
+      try {
+        await deletePartner(id);
+        triggerSuccessFeedback();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao excluir parceiro do Firebase Firestore.");
+      }
     }
   };
 
   const handleSavePartner = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPartnerError('');
+    
     if (!partnerName.trim()) {
-      alert("Por favor, preencha o nome do parceiro.");
+      setPartnerError("Por favor, preencha o nome do parceiro.");
       return;
     }
     if (!partnerLogoUrl.trim()) {
-      alert("Por favor, insira o link da logo ou selecione uma imagem para upload.");
+      setPartnerError("Por favor, insira o link da logo ou selecione uma imagem para upload.");
       return;
     }
 
@@ -452,17 +502,25 @@ export default function AdminPanel() {
       logoUrl: partnerLogoUrl.trim()
     };
 
-    if (editingPartnerId) {
-      await updatePartner(editingPartnerId, partnerPayload);
-    } else {
-      await addPartner(partnerPayload);
-    }
+    setIsSavingPartner(true);
+    try {
+      if (editingPartnerId) {
+        await updatePartner(editingPartnerId, partnerPayload);
+      } else {
+        await addPartner(partnerPayload);
+      }
 
-    setIsPartnerFormOpen(false);
-    setEditingPartnerId(null);
-    setPartnerName('');
-    setPartnerLogoUrl('');
-    triggerSuccessFeedback();
+      setIsPartnerFormOpen(false);
+      setEditingPartnerId(null);
+      setPartnerName('');
+      setPartnerLogoUrl('');
+      triggerSuccessFeedback();
+    } catch (err: any) {
+      console.error(err);
+      setPartnerError("Falha ao salvar parceiro no Firestore. Revise as permissões de gravação ou o tamanho do arquivo.");
+    } finally {
+      setIsSavingPartner(false);
+    }
   };
 
   const handleRestorePartnersDefault = async () => {
@@ -911,6 +969,9 @@ export default function AdminPanel() {
                         </label>
                       </div>
                     </div>
+                    <span className="block text-[9px] text-slate-400 mt-1 leading-normal">
+                      ★ <strong className="text-indigo-400">Dica Postimages:</strong> Ao hospedar no Postimages, selecione a opção <strong className="text-slate-200">Link Direto</strong> (ex: <code className="bg-slate-950 px-1 py-0.5 rounded text-indigo-300">https://i.postimg.cc/...</code>) para o preenchimento ou faça upload local.
+                    </span>
                   </div>
 
                   {/* Slider Controls group divided into two grids */}
@@ -977,10 +1038,64 @@ export default function AdminPanel() {
 
                     {/* Col 2: Photo Position & Scaling */}
                     <div className="space-y-4">
+                      {/* Presets de Alinhamento Rápido */}
+                      <div className="bg-slate-950/40 p-3.5 rounded-xl border border-indigo-950/50 space-y-2.5">
+                        <span className="text-[9px] font-bold text-indigo-400 tracking-wider uppercase block">Ajustes Rápidos de Alinhamento</span>
+                        
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoPosX(0)}
+                            className="bg-slate-900 hover:bg-slate-800 border border-indigo-950 text-slate-350 px-1.5 py-1.5 rounded-lg text-[9px] font-bold cursor-pointer transition-colors text-center"
+                          >
+                            Borda Esquerda
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setTempBannerPhotoPosX(50); setTempBannerPhotoPosY(50); }}
+                            className="bg-indigo-655 hover:bg-indigo-500 bg-indigo-600 text-white border border-indigo-500/40 px-1.5 py-1.5 rounded-lg text-[9px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1 hover:scale-[1.02]"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            Centralizar Tudo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoPosX(100)}
+                            className="bg-slate-900 hover:bg-slate-800 border border-indigo-950 text-slate-350 px-1.5 py-1.5 rounded-lg text-[9px] font-bold cursor-pointer transition-colors text-center"
+                          >
+                            Borda Direita
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoPosY(0)}
+                            className="bg-slate-900 hover:bg-slate-800 border border-indigo-950 text-slate-350 px-1.5 py-1.5 rounded-lg text-[9px] font-bold cursor-pointer transition-colors"
+                          >
+                            Alinhar ao Topo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoPosY(50)}
+                            className="bg-slate-900 hover:bg-slate-800 border border-indigo-950 text-slate-350 px-1.5 py-1.5 rounded-lg text-[9px] font-bold cursor-pointer transition-colors"
+                          >
+                            Meio Vertical
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTempBannerPhotoPosY(100)}
+                            className="bg-slate-900 hover:bg-slate-800 border border-indigo-950 text-slate-350 px-1.5 py-1.5 rounded-lg text-[9px] font-bold cursor-pointer transition-colors"
+                          >
+                            Alinhar à Base
+                          </button>
+                        </div>
+                      </div>
+
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
-                            Mover Foto - Eixo X (Horizontal)
+                            Ajuste Fino - Eixo X (Horizontal)
                           </label>
                           <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPhotoPosX}%</span>
                         </div>
@@ -992,13 +1107,13 @@ export default function AdminPanel() {
                           onChange={(e) => setTempBannerPhotoPosX(Number(e.target.value))}
                           className="w-full accent-indigo-500 bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
                         />
-                        <span className="text-[9px] text-slate-400 block mt-0.5">Ajusta o alinhamento horizontal (esquerda ou direita)</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Arraste para mover para a esquerda ou direita</span>
                       </div>
 
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <label className="text-[10px] font-bold text-slate-350 uppercase tracking-wider">
-                            Mover Foto - Eixo Y (Vertical)
+                            Ajuste Fino - Eixo Y (Vertical)
                           </label>
                           <span className="font-mono text-[10px] text-indigo-400 font-bold">{tempBannerPhotoPosY}%</span>
                         </div>
@@ -1010,7 +1125,7 @@ export default function AdminPanel() {
                           onChange={(e) => setTempBannerPhotoPosY(Number(e.target.value))}
                           className="w-full accent-indigo-500 bg-slate-955 h-1.5 rounded-lg appearance-none cursor-pointer"
                         />
-                        <span className="text-[9px] text-slate-400 block mt-0.5">Ajusta o alinhamento vertical (para cima ou para baixo)</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Arraste para mover para cima ou para baixo</span>
                       </div>
 
                       <div>
@@ -1064,11 +1179,18 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
+                {saveError && (
+                  <div className="p-3.5 mb-2 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xs font-semibold leading-relaxed animate-pulse">
+                    {saveError}
+                  </div>
+                )}
+
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={handleRestoreSettings}
-                    className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     <span>Valores Originais</span>
@@ -1076,10 +1198,22 @@ export default function AdminPanel() {
 
                   <button
                     type="submit"
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-900/30 cursor-pointer"
+                    disabled={isSaving}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-900/30 cursor-pointer text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isSaving ? 'bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-500'
+                    }`}
                   >
-                    <Save className="h-4 w-4" />
-                    <span>Salvar e Atualizar Firebase</span>
+                    {isSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white"></div>
+                        <span>Gravando e sincronizando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>Salvar e Atualizar Firebase</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -1591,9 +1725,12 @@ export default function AdminPanel() {
                             type="url"
                             value={partnerLogoUrl}
                             onChange={(e) => setPartnerLogoUrl(e.target.value)}
-                            placeholder="https://exemplo.com/logomarca.png"
-                            className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none transition-all"
+                            placeholder="Ex: https://i.postimg.cc/65M471Pn/logo.png"
+                            className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none transition-all font-mono"
                           />
+                          <span className="block text-[9px] text-slate-400 mt-1.5 leading-normal">
+                            ★ <strong className="text-indigo-400">Suporte Postimages:</strong> Utilize o <strong className="text-slate-200">Link Direto</strong> (começando com <code className="bg-slate-950 px-1 py-0.5 rounded text-indigo-300">https://i.postimg.cc/...</code>) para que a imagem apareça corretamente nas logomarcas dos parceiros.
+                          </span>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1627,20 +1764,35 @@ export default function AdminPanel() {
                       )}
                     </div>
 
+                    {partnerError && (
+                      <div className="p-3 mb-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-[10px] font-semibold leading-relaxed animate-pulse">
+                        {partnerError}
+                      </div>
+                    )}
+
                     <div className="flex gap-3 justify-end pt-4 border-t border-indigo-950/30">
                       <button
                         type="button"
                         onClick={() => setIsPartnerFormOpen(false)}
-                        className="px-4 py-2.5 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                        disabled={isSavingPartner}
+                        className="px-4 py-2.5 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Cancelar
                       </button>
 
                       <button
                         type="submit"
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-950/40 cursor-pointer"
+                        disabled={isSavingPartner}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-950/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                       >
-                        {editingPartnerId ? 'Salvar Alterações' : 'Adicionar Parceiro'}
+                        {isSavingPartner ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-white"></div>
+                            <span>Salvando...</span>
+                          </>
+                        ) : (
+                          <span>{editingPartnerId ? 'Salvar Alterações' : 'Adicionar Parceiro'}</span>
+                        )}
                       </button>
                     </div>
 
