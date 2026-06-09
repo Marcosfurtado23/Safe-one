@@ -109,10 +109,10 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
   const gradientMid = typeof settings.bannerGradientLength === 'number' ? settings.bannerGradientLength : 42;
   const overlayStyle: React.CSSProperties = isLargeScreen
     ? {
-        backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.85) ${gradientMid}%, rgba(5, 17, 36, 0.1) 100%)`,
+        backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.92) 32%, rgba(5, 17, 36, 0.45) 55%, rgba(5, 17, 36, 0) 75%)`,
       }
     : {
-        backgroundImage: `linear-gradient(to bottom, rgba(5, 17, 36, 0.95) 0%, rgba(5, 17, 36, 0.85) ${gradientMid}%, rgba(5, 17, 36, 0.95) 100%)`,
+        backgroundImage: `linear-gradient(to bottom, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.75) 45%, rgba(5, 17, 36, 0) 80%)`,
       };
 
   const customHeroSectionStyle: React.CSSProperties = {
