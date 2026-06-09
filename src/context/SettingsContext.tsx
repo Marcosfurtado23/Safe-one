@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   phone: '+55 (11) 4003-9821',
   susepNumber: '10.2045610',
   cnpj: '00.320.145/0001-99',
-  bannerImageUrl: 'https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg',
+  bannerImageUrl: 'https://i.postimg.cc/65M471Pn/Familia-feliz-sentado-em-sofa-202606071250-(1).jpg',
   bannerPaddingTop: 80,
   bannerPaddingBottom: 56,
   bannerGradientLength: 42,
@@ -35,6 +35,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   bannerPhotoSizeOption: 'cover',
   bannerPhotoScale: 100,
 };
+
+const OLD_BANNER_IMAGE = 'https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg';
+const NEW_BANNER_IMAGE = 'https://i.postimg.cc/65M471Pn/Familia-feliz-sentado-em-sofa-202606071250-(1).jpg';
+
+function migrateSettings(data: AppSettings): AppSettings {
+  if (data.bannerImageUrl === OLD_BANNER_IMAGE) {
+    return { ...data, bannerImageUrl: NEW_BANNER_IMAGE };
+  }
+  return data;
+}
 
 interface SettingsContextType {
   settings: AppSettings;
@@ -50,12 +60,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem('safeone_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return { ...DEFAULT_SETTINGS, ...parsed };
+        return migrateSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
     } catch (e) {
       console.error("Error reading settings from localStorage", e);
     }
-    return DEFAULT_SETTINGS;
+    return migrateSettings(DEFAULT_SETTINGS);
   });
 
   // Listen to Firestore real-time settings configuration document
@@ -64,7 +74,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(configDocRef, (snapshot) => {
       if (snapshot.exists()) {
         const firestoreData = snapshot.data() as AppSettings;
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...firestoreData };
+        const mergedSettings = migrateSettings({ ...DEFAULT_SETTINGS, ...firestoreData });
         setSettings(mergedSettings);
         try {
           localStorage.setItem('safeone_settings', JSON.stringify(mergedSettings));

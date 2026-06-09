@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, Calculator } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import { usePartners } from '../context/PartnersContext';
 
 interface HeroProps {
   onOpenSimulator: () => void;
@@ -85,12 +86,13 @@ const PrudentialLogo = () => (
 
 export default function Hero({ onOpenSimulator }: HeroProps) {
   const { settings } = useSettings();
+  const { partners } = usePartners();
   const brokerWhatsApp = settings.brokerWhatsApp;
   const welcomeText = encodeURIComponent("Olá! Vim através do site da SafeOne e gostaria de simular um Seguro de Vida com um especialista.");
   const waUrl = `https://wa.me/${brokerWhatsApp}?text=${welcomeText}`;
   
   // High-fidelity image path of the smiling Brazilian family
-  const familyImgUrl = settings.bannerImageUrl || "https://i.postimg.cc/MTGLG7xz/Familia-feliz-sentado-em-sofa-202606071250.jpg";
+  const familyImgUrl = settings.bannerImageUrl || "https://i.postimg.cc/65M471Pn/Familia-feliz-sentado-em-sofa-202606071250-(1).jpg";
 
   // Responsive state for vertical vs horizontal gradient overlap
   const [isLargeScreen, setIsLargeScreen] = React.useState(false);
@@ -114,7 +116,7 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
       };
 
   const customHeroSectionStyle: React.CSSProperties = {
-    backgroundImage: `url(${familyImgUrl})`,
+    backgroundImage: `url("${familyImgUrl}")`,
     backgroundPosition: typeof settings.bannerPhotoPosX === 'number' && typeof settings.bannerPhotoPosY === 'number'
       ? `${settings.bannerPhotoPosX}% ${settings.bannerPhotoPosY}%`
       : 'right bottom',
@@ -241,12 +243,47 @@ export default function Hero({ onOpenSimulator }: HeroProps) {
 
             {/* Vector representations of actual carrier logos arranged in the precise horizontal layout */}
             <div className="flex-1 w-full flex flex-wrap items-center justify-center lg:justify-between gap-y-6 gap-x-8 md:gap-x-10 px-2">
-              <PortoSeguroLogo />
-              <TokioMarineLogo />
-              <AllianzLogo />
-              <IcatuLogo />
-              <MagLogo />
-              <PrudentialLogo />
+              {partners && partners.length > 0 ? (
+                partners.map((partner) => {
+                  if (partner.isDefault) {
+                    switch (partner.id) {
+                      case 'porto-seguro':
+                        return <PortoSeguroLogo key={partner.id} />;
+                      case 'tokio-marine':
+                        return <TokioMarineLogo key={partner.id} />;
+                      case 'allianz':
+                        return <AllianzLogo key={partner.id} />;
+                      case 'icatu':
+                        return <IcatuLogo key={partner.id} />;
+                      case 'mag':
+                        return <MagLogo key={partner.id} />;
+                      case 'prudential':
+                        return <PrudentialLogo key={partner.id} />;
+                      default:
+                        break;
+                    }
+                  }
+                  
+                  // Custom partner logo or uploaded image logo
+                  return (
+                    <div key={partner.id} className="flex items-center gap-2 select-none shrink-0" title={partner.name}>
+                      <img
+                        src={partner.logoUrl}
+                        alt={partner.name}
+                        referrerPolicy="no-referrer"
+                        className="h-8 max-h-12 w-auto object-contain shrink-0 filter grayscale hover:grayscale-0 transition-all duration-200"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="text-[10px] font-black text-slate-800 leading-none tracking-wide">{partner.name}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-slate-400 text-xs">Nenhum parceiro cadastrado.</p>
+              )}
             </div>
 
           </div>

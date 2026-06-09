@@ -29,6 +29,18 @@
         "content": { "type": "array" }
       },
       "required": ["id", "category", "title", "excerpt", "readTime", "date", "content"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Dynamic insurance companies / partners list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "name", "logoUrl"]
     }
   },
   "firestore": {
@@ -39,6 +51,10 @@
     "/articles/{articleId}": {
       "schema": "Article",
       "description": "Detailed blog articles for SafeOne insurance topics"
+    },
+    "/partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Dynamic partners and insurers displaying in client-side screens"
     }
   }
 }

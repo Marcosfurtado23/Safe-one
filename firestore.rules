@@ -19,7 +19,7 @@ service cloud.firestore {
     // Type and structure validator for settings configuration
     function isValidSettings(data) {
       return data.keys().hasAll(['brokerWhatsApp', 'email', 'address', 'phone', 'susepNumber', 'cnpj'])
-        && data.keys().size() == 6
+        && data.keys().size() >= 6
         && data.brokerWhatsApp is string && data.brokerWhatsApp.size() <= 32
         && data.email is string && data.email.size() <= 128
         && data.address is string && data.address.size() <= 256
@@ -55,6 +55,23 @@ service cloud.firestore {
       allow get: if true;
       allow create, update: if isSignedIn() && isValidId(articleId) && isValidArticle(request.resource.data);
       allow delete: if isSignedIn() && isValidId(articleId);
+    }
+
+    // Type and structure validator for partners
+    function isValidPartner(data) {
+      return data.keys().hasAll(['id', 'name', 'logoUrl'])
+        && (data.keys().size() == 3 || (data.keys().size() == 4 && data.keys().hasAny(['isDefault'])))
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 128
+        && data.logoUrl is string && data.logoUrl.size() <= 2500000;
+    }
+
+    // Partners/Carriers Access Controls
+    match /partners/{partnerId} {
+      allow read, list: if true;
+      allow get: if true;
+      allow create, update: if isSignedIn() && isValidId(partnerId) && isValidPartner(request.resource.data);
+      allow delete: if isSignedIn() && isValidId(partnerId);
     }
   }
 }

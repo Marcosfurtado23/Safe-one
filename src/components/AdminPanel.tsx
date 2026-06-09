@@ -36,10 +36,12 @@ import {
 import { auth } from '../lib/firebase';
 import { useSettings } from '../context/SettingsContext';
 import { useArticles, Article } from '../context/ArticlesContext';
+import { usePartners, Partner } from '../context/PartnersContext';
 
 export default function AdminPanel() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { articles, addArticle, updateArticle, deleteArticle, resetArticles } = useArticles();
+  const { partners, addPartner, updatePartner, deletePartner, resetPartners } = usePartners();
 
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -72,8 +74,83 @@ export default function AdminPanel() {
   // State to manage the mini preview popup visibility
   const [showPreviewPopup, setShowPreviewPopup] = useState(true);
 
+  // Draggable offset coordinate state for the real-time preview pop-up
+  const [previewPos, setPreviewPos] = useState({ x: 0, y: 0 });
+  const [isDraggingPreview, setIsDraggingPreview] = useState(false);
+  const dragStartRef = React.useRef({ x: 0, y: 0 });
+  const previewOffsetRef = React.useRef({ x: 0, y: 0 });
+
+  const handlePreviewMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Exclude button clicks, sliders, and inputs
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input') || (e.target as HTMLElement).closest('a')) {
+      return;
+    }
+    setIsDraggingPreview(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    previewOffsetRef.current = { x: previewPos.x, y: previewPos.y };
+  };
+
+  const handlePreviewMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isDraggingPreview) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    setPreviewPos({
+      x: previewOffsetRef.current.x + dx,
+      y: previewOffsetRef.current.y + dy,
+    });
+  }, [isDraggingPreview]);
+
+  const handlePreviewMouseUp = React.useCallback(() => {
+    setIsDraggingPreview(false);
+  }, []);
+
+  const handlePreviewTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input') || (e.target as HTMLElement).closest('a')) {
+      return;
+    }
+    const touch = e.touches[0];
+    setIsDraggingPreview(true);
+    dragStartRef.current = { x: touch.clientX, y: touch.clientY };
+    previewOffsetRef.current = { x: previewPos.x, y: previewPos.y };
+  };
+
+  const handlePreviewTouchMove = React.useCallback((e: TouchEvent) => {
+    if (!isDraggingPreview) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStartRef.current.x;
+    const dy = touch.clientY - dragStartRef.current.y;
+    setPreviewPos({
+      x: previewOffsetRef.current.x + dx,
+      y: previewOffsetRef.current.y + dy,
+    });
+  }, [isDraggingPreview]);
+
+  const handlePreviewTouchEnd = React.useCallback(() => {
+    setIsDraggingPreview(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDraggingPreview) {
+      document.addEventListener('mousemove', handlePreviewMouseMove);
+      document.addEventListener('mouseup', handlePreviewMouseUp);
+      document.addEventListener('touchmove', handlePreviewTouchMove, { passive: false });
+      document.addEventListener('touchend', handlePreviewTouchEnd);
+    } else {
+      document.removeEventListener('mousemove', handlePreviewMouseMove);
+      document.removeEventListener('mouseup', handlePreviewMouseUp);
+      document.removeEventListener('touchmove', handlePreviewTouchMove);
+      document.removeEventListener('touchend', handlePreviewTouchEnd);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handlePreviewMouseMove);
+      document.removeEventListener('mouseup', handlePreviewMouseUp);
+      document.removeEventListener('touchmove', handlePreviewTouchMove);
+      document.removeEventListener('touchend', handlePreviewTouchEnd);
+    };
+  }, [isDraggingPreview, handlePreviewMouseMove, handlePreviewMouseUp, handlePreviewTouchMove, handlePreviewTouchEnd]);
+
   // Articles manager state
-  const [activeTab, setActiveTab] = useState<'settings' | 'articles'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'articles' | 'partners'>('settings');
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formCategory, setFormCategory] = useState('Proteção Familiar');
@@ -85,6 +162,14 @@ export default function AdminPanel() {
   const [formImage, setFormImage] = useState('');
   const [formImageMode, setFormImageMode] = useState<'url' | 'upload' | 'none'>('url');
   const [formContentText, setFormContentText] = useState('');
+
+  // Partners/Insurers manager state
+  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
+  const [isPartnerFormOpen, setIsPartnerFormOpen] = useState(false);
+  const [partnerName, setPartnerName] = useState('');
+  const [partnerLogoUrl, setPartnerLogoUrl] = useState('');
+  const [partnerLogoImageMode, setPartnerLogoImageMode] = useState<'url' | 'upload'>('url');
+  const [partnerSaveSuccess, setPartnerSaveSuccess] = useState(false);
 
   // Notification feedbacks
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -310,6 +395,81 @@ export default function AdminPanel() {
       resetArticles();
       setIsFormOpen(false);
       setEditingArticleId(null);
+      triggerSuccessFeedback();
+    }
+  };
+
+  const handlePartnerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("A imagem de logo selecionada é muito grande! Escolha um arquivo menor de até 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPartnerLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreatePartnerClick = () => {
+    setEditingPartnerId(null);
+    setPartnerName('');
+    setPartnerLogoUrl('');
+    setPartnerLogoImageMode('url');
+    setIsPartnerFormOpen(true);
+  };
+
+  const handleEditPartnerClick = (partner: Partner) => {
+    setEditingPartnerId(partner.id);
+    setPartnerName(partner.name);
+    setPartnerLogoUrl(partner.logoUrl);
+    setPartnerLogoImageMode(partner.logoUrl.startsWith('data:') ? 'upload' : 'url');
+    setIsPartnerFormOpen(true);
+  };
+
+  const handleDeletePartnerClick = (id: string, name: string) => {
+    if (window.confirm(`Tem certeza que deseja excluir o parceiro "${name}"?`)) {
+      deletePartner(id);
+    }
+  };
+
+  const handleSavePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!partnerName.trim()) {
+      alert("Por favor, preencha o nome do parceiro.");
+      return;
+    }
+    if (!partnerLogoUrl.trim()) {
+      alert("Por favor, insira o link da logo ou selecione uma imagem para upload.");
+      return;
+    }
+
+    const partnerPayload = {
+      name: partnerName.trim(),
+      logoUrl: partnerLogoUrl.trim()
+    };
+
+    if (editingPartnerId) {
+      await updatePartner(editingPartnerId, partnerPayload);
+    } else {
+      await addPartner(partnerPayload);
+    }
+
+    setIsPartnerFormOpen(false);
+    setEditingPartnerId(null);
+    setPartnerName('');
+    setPartnerLogoUrl('');
+    triggerSuccessFeedback();
+  };
+
+  const handleRestorePartnersDefault = async () => {
+    if (window.confirm("Essa ação restaurará a lista de seguradoras padrão de fábrica (substituindo edições e parceiros extras). Deseja prosseguir?")) {
+      await resetPartners();
+      setIsPartnerFormOpen(false);
+      setEditingPartnerId(null);
       triggerSuccessFeedback();
     }
   };
@@ -553,7 +713,7 @@ export default function AdminPanel() {
 
             <button
               type="button"
-              onClick={() => setActiveTab('articles')}
+              onClick={() => { setActiveTab('articles'); setIsPartnerFormOpen(false); }}
               className={`w-full px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center gap-3 cursor-pointer text-left border ${
                 activeTab === 'articles'
                   ? 'bg-gradient-to-r from-indigo-700 to-indigo-800 text-white border-indigo-500/20 shadow-xl'
@@ -562,6 +722,19 @@ export default function AdminPanel() {
             >
               <BookOpen className="h-4 w-4" />
               <span>Gerenciar Artigos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('partners'); setIsPartnerFormOpen(false); }}
+              className={`w-full px-4 py-3 text-xs font-bold rounded-xl transition-all flex items-center gap-3 cursor-pointer text-left border ${
+                activeTab === 'partners'
+                  ? 'bg-gradient-to-r from-indigo-700 to-indigo-800 text-white border-indigo-500/20 shadow-xl'
+                  : 'text-slate-400 hover:text-white hover:bg-[#081b37] border-transparent'
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>Parceiros / Seguradoras</span>
             </button>
 
             {saveSuccess && (
@@ -1249,6 +1422,234 @@ export default function AdminPanel() {
               </div>
             )}
 
+            {/* Tab 3: Partners/Insurers Manager */}
+            {activeTab === 'partners' && (
+              <div className="space-y-4">
+                
+                {!isPartnerFormOpen ? (
+                  <div className="space-y-6">
+                    
+                    <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-950/40 p-4 rounded-xl border border-indigo-950/50">
+                      <div>
+                        <h4 className="font-display font-bold text-white text-sm">Parceiros & Seguradoras Cadastradas</h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Defina as logomarcas que aparecem na home do seu site.</p>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleRestorePartnersDefault}
+                          className="bg-transparent border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all font-bold"
+                          title="Restaurar de Fábrica"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span>Padrão Fábrica</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleCreatePartnerClick}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 font-bold transition-all hover:scale-[1.01] cursor-pointer shadow-md shadow-indigo-950/40"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Novo Parceiro</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Partners Grid */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {partners && partners.map((partner) => (
+                        <div 
+                          key={partner.id} 
+                          className="rounded-xl border border-indigo-950/40 bg-[#061225] p-4 flex flex-col justify-between hover:border-indigo-500/20 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Logo Display */}
+                            <div className="h-10 w-16 bg-white rounded-lg p-1.5 flex items-center justify-center shrink-0 border border-indigo-950/20 shadow-inner">
+                              {partner.isDefault ? (
+                                <span className="text-[7.5px] font-extrabold text-slate-900 tracking-tighter text-center leading-tight uppercase font-mono bg-indigo-50 px-1 py-0.5 rounded">
+                                  Default<br />Vetor
+                                </span>
+                              ) : (
+                                <img 
+                                  src={partner.logoUrl} 
+                                  alt={partner.name} 
+                                  className="h-full w-full object-contain filter hover:brightness-110" 
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h5 className="font-sans font-bold text-xs text-white truncate leading-tight">{partner.name}</h5>
+                              <p className="text-[9px] text-slate-400 mt-1 font-mono uppercase tracking-wider">
+                                {partner.isDefault ? '• Vetorial (Fixo)' : '• Upload Customizado'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-indigo-950/30">
+                            <button
+                              type="button"
+                              onClick={() => handleEditPartnerClick(partner)}
+                              className="p-1.5 rounded-lg border border-indigo-950 hover:border-indigo-800 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                              title="Editar Parceiro"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePartnerClick(partner.id, partner.name)}
+                              className="p-1.5 rounded-lg border border-red-950/50 hover:border-red-950 hover:bg-red-950/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                              title="Excluir do Site"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+                ) : (
+                  // Add/Edit Partner Form view
+                  <form onSubmit={handleSavePartner} className="space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-indigo-950/60 pb-3">
+                      <div>
+                        <h4 className="font-display font-black text-white text-sm">
+                          {editingPartnerId ? 'Editar Parceiro / Seguradora' : 'Cadastrar Novo Parceiro'}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Configure a marca e o carregamento do logo oficial da seguradora.
+                        </p>
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setIsPartnerFormOpen(false)}
+                        className="text-slate-400 hover:text-white p-1 hover:bg-indigo-950 rounded transition-all cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                          Nome do Parceiro (Ex: Porto Seguro, SulAmérica)
+                        </label>
+                        <input
+                          type="text"
+                          value={partnerName}
+                          onChange={(e) => setPartnerName(e.target.value)}
+                          placeholder="Ex: Bradesco Seguros"
+                          className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none transition-all"
+                          required
+                        />
+                      </div>
+
+                      {/* Image mode switcher */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                          Formato de Envio do Logotipo
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setPartnerLogoImageMode('url'); setPartnerLogoUrl(''); }}
+                            className={`px-3 py-2.5 rounded-xl border text-[10px] uppercase font-mono font-bold tracking-wider transition-all cursor-pointer text-center ${
+                              partnerLogoImageMode === 'url'
+                                ? 'bg-[#081b37] border-indigo-500/50 text-white'
+                                : 'border-indigo-950 text-slate-500 hover:text-slate-350'
+                            }`}
+                          >
+                            Link Externo (URL)
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => { setPartnerLogoImageMode('upload'); setPartnerLogoUrl(''); }}
+                            className={`px-3 py-2.5 rounded-xl border text-[10px] uppercase font-mono font-bold tracking-wider transition-all cursor-pointer text-center ${
+                              partnerLogoImageMode === 'upload'
+                                ? 'bg-[#081b37] border-indigo-500/50 text-white'
+                                : 'border-indigo-950 text-slate-500 hover:text-slate-350'
+                            }`}
+                          >
+                            Fazer Upload de Imagem
+                          </button>
+                        </div>
+                      </div>
+
+                      {partnerLogoImageMode === 'url' ? (
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-350 uppercase tracking-wider mb-1.5">
+                            Endereço URL da Imagem (Link Direto)
+                          </label>
+                          <input
+                            type="url"
+                            value={partnerLogoUrl}
+                            onChange={(e) => setPartnerLogoUrl(e.target.value)}
+                            placeholder="https://exemplo.com/logomarca.png"
+                            className="w-full rounded-xl border border-indigo-950 bg-slate-950 px-4 py-2.5 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none transition-all"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="border border-dashed border-indigo-950 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-950/20">
+                            {partnerLogoUrl ? (
+                              <div className="relative h-20 w-32 rounded-lg overflow-hidden border border-indigo-950 bg-white p-2 flex items-center justify-center">
+                                <img src={partnerLogoUrl} alt="Logo upload preview" className="max-h-full max-w-full object-contain" />
+                                <button
+                                  type="button"
+                                  onClick={() => setPartnerLogoUrl('')}
+                                  className="absolute top-1 right-1 h-5 w-5 bg-black/70 hover:bg-black rounded-full flex items-center justify-center focus:outline-none"
+                                >
+                                  <X className="h-3 w-3 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="cursor-pointer flex flex-col items-center">
+                                <Upload className="h-6 w-6 text-indigo-400 mb-2" />
+                                <span className="text-[10px] text-indigo-300 font-bold">Clique para selecionar logotipo</span>
+                                <span className="text-[8px] text-slate-500 mt-0.5">Imagens PNG transparentes de tamanho menor operam melhor! Máximo 2MB.</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handlePartnerFileUpload}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4 border-t border-indigo-950/30">
+                      <button
+                        type="button"
+                        onClick={() => setIsPartnerFormOpen(false)}
+                        className="px-4 py-2.5 rounded-xl border border-indigo-950 hover:bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                      >
+                        Cancelar
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-indigo-950/40 cursor-pointer"
+                      >
+                        {editingPartnerId ? 'Salvar Alterações' : 'Adicionar Parceiro'}
+                      </button>
+                    </div>
+
+                  </form>
+                )}
+
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -1257,12 +1658,41 @@ export default function AdminPanel() {
 
       {/* PREVISÃO EM TEMPO REAL FLUTUANTE (MINI POP-UP) */}
       {activeTab === 'settings' && showPreviewPopup && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-96 rounded-2xl bg-[#061225] border border-indigo-500/20 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[360px] md:max-h-[420px]">
-          {/* Panel Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-indigo-950 bg-[#051124] text-white">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-indigo-400 animate-pulse" />
-              <span className="text-xs font-bold font-sans tracking-wide">Prévia em Tempo Real (Banner)</span>
+        <div 
+          className={`fixed bottom-4 right-4 z-50 w-80 sm:w-96 rounded-2xl bg-[#061225] border border-indigo-500/20 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[360px] md:max-h-[420px] select-none ${isDraggingPreview ? 'ring-1 ring-indigo-500/55 shadow-indigo-950/80 scale-[1.01]' : ''}`}
+          style={{ 
+            transform: `translate(${previewPos.x}px, ${previewPos.y}px)`,
+            touchAction: 'none',
+            transition: isDraggingPreview ? 'none' : 'transform 0.1s ease-out, scale 0.15s ease-out'
+          }}
+        >
+          {/* Panel Header (Acts as the drag handler handle) */}
+          <div 
+            onMouseDown={handlePreviewMouseDown}
+            onTouchStart={handlePreviewTouchStart}
+            className="flex items-center justify-between px-4 py-2.5 border-b border-indigo-950 bg-[#051124] text-white select-none active:bg-[#071730]"
+            style={{ cursor: isDraggingPreview ? 'grabbing' : 'grab' }}
+            title="Clique e arraste para mover o pop-up"
+          >
+            <div className="flex items-center gap-2">
+              {/* Premium Dotted Grid Handle Accent */}
+              <div className="flex flex-col gap-0.5 opacity-55 hover:opacity-100 transition-opacity">
+                <div className="flex gap-0.5">
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                </div>
+                <div className="flex gap-0.5">
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                  <div className="h-1 w-1 rounded-full bg-slate-350" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 ml-1">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-400 animate-pulse" />
+                <span className="text-xs font-bold font-sans tracking-wide">Prévia em Tempo Real (Banner)</span>
+              </div>
             </div>
             <button
               onClick={() => setShowPreviewPopup(false)}
@@ -1278,7 +1708,7 @@ export default function AdminPanel() {
             <div 
               className="w-full rounded-xl border border-indigo-950/40 relative overflow-hidden bg-[#051124] text-white bg-no-repeat"
               style={{
-                backgroundImage: `url(${tempBannerImageUrl})`,
+                backgroundImage: `url("${tempBannerImageUrl}")`,
                 backgroundPosition: `${tempBannerPhotoPosX}% ${tempBannerPhotoPosY}%`,
                 backgroundSize: tempBannerPhotoSizeOption === 'custom' ? `${tempBannerPhotoScale}%` : 'cover',
                 // Scaled padding down to 35% of original to fit neatly inside the preview card
@@ -1320,8 +1750,8 @@ export default function AdminPanel() {
             </div>
             
             {/* Visual disclaimer */}
-            <p className="text-[9px] text-indigo-400 mt-2 text-center font-medium font-mono">
-              ✓ Arraste os sliders acima para ver as atualizações em tempo real!
+            <p className="text-[9px] text-[#dfb448] mt-2.5 text-center font-semibold font-mono flex items-center justify-center gap-1">
+              <span>🫳 Segure no cabeçalho para arrastar e posicionar o pop-up!</span>
             </p>
           </div>
         </div>
