@@ -1721,7 +1721,7 @@ export default function AdminPanel() {
               <div 
                 className="absolute inset-0 z-10" 
                 style={{
-                  backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.92) 32%, rgba(5, 17, 36, 0.45) 55%, rgba(5, 17, 36, 0) 75%)`
+                  backgroundImage: `linear-gradient(to right, rgba(5, 17, 36, 0.98) 0%, rgba(5, 17, 36, 0.92) 36%, rgba(5, 17, 36, 0.4) 42%, rgba(5, 17, 36, 0) 48%)`
                 }}
               />
 
